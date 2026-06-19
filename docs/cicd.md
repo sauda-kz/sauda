@@ -54,6 +54,17 @@ CD (SSH-деплой) включается одной переменной, ко
 
 Любой упавший шаг — падение workflow.
 
+### Hotfix и back-merge
+
+| Workflow | Триггер | Действие |
+|----------|---------|----------|
+| `backend-ci.yml` / `frontend-ci.yml` | Push `hotfix/**`, PR → `main` | CI на hotfix |
+| `back-merge-hotfix.yml` | Merge PR `hotfix/*` → `main` | Авто-PR `main` → `develop` |
+
+После merge hotfix в `main` проверьте открытый PR **main → develop**, дождитесь CI и смержите.
+
+Подробнее: [branching.md](branching.md)
+
 ## Continuous Deployment
 
 Все deploy-workflows проверяют `vars.DEPLOY_ENABLED == 'true'`.

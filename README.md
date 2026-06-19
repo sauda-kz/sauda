@@ -102,244 +102,47 @@ docker compose up -d --build
 
 ## Стратегия веток
 
-GitFlow-подход для MVP:
+GitFlow-подход:
 
-| Ветка | Назначение |
-|-------|------------|
-| `main` | Код, готовый к продакшену. **Автодеплоя нет** — только CI |
-| `develop` | Интеграция текущей работы над MVP |
-| `feature/*` | Новая функциональность (задачи, фичи) |
-| `release/*` | Стабилизация релиза перед QA |
-| `hotfix/*` | Срочные исправления в проде |
+- `main` — готовый к продакшену код
+- `develop` — интеграционная ветка
+- `feature/*` — новая функциональность
+- `release/*` — стабилизация релиза
+- `hotfix/*` — срочные исправления в проде (от `main`, back-merge в `develop` — см. [branching.md](docs/branching.md))
 
 Прямые push в `main` запрещены. Все изменения — через Pull Request.
 
 Подробнее: [docs/branching.md](docs/branching.md)
 
----
+## Обзор CI/CD
 
-## Как доставляется новая функциональность
+### Continuous Integration
 
-Полный путь фичи от разработки до PROD:
+| Workflow | Триггеры | Проверки |
+|----------|----------|----------|
+| `backend-ci.yml` | PR → `main`/`develop`, push `main`/`develop`/`hotfix/**`/`release/**`/`feature/**` | Verify, тесты, JaCoCo, Checkstyle, Spotless, JAR, Docker build |
+| `frontend-ci.yml` | PR → `main`/`develop`, push `main`/`develop`/`hotfix/**`/`release/**`/`feature/**` | Lint, type check, build, тесты, Docker build |
+| `back-merge-hotfix.yml` | Merge `hotfix/*` → `main` | Авто-PR `main` → `develop` |
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  1. РАЗРАБОТКА                                                  │
-│     feature/SAUDA-123-cart  ←  ветка от develop                 │
-│     Локально: mvnw / npm run dev  или  docker compose up        │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │ Pull Request
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  2. CI (автоматически на каждый PR)                             │
-│     backend-ci.yml  → тесты, coverage, Checkstyle, Spotless    │
-│     frontend-ci.yml → lint, type-check, build, tests            │
-│     Образы собираются, но на сервер НЕ деплоятся                │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │ Merge PR → develop
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  3. DEV (если DEPLOY_ENABLED=true)                              │
-│     deploy-dev.yml → GHCR → SSH → docker compose up             │
-│     Профиль Spring: dev, mock-интеграции                        │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │ release/1.0.0 от develop
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  4. TEST (если DEPLOY_ENABLED=true)                             │
-│     deploy-test.yml → QA проверяет на test-сервере              │
-│     Профиль Spring: test, mock-интеграции                       │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │ Merge release → main
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  5. main — только CI, prod НЕ меняется                          │
-└───────────────────────────────┬─────────────────────────────────┘
-                                │ Actions → Deploy PROD (вручную)
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  6. PROD (ручной запуск + approval)                             │
-│     deploy-prod.yml → prod-сервер, реальные интеграции          │
-└─────────────────────────────────────────────────────────────────┘
-```
+Пайплайн падает при любой ошибке.
 
-### Пример: добавили API корзины
+### Continuous Deployment
 
-```bash
-# 1. Новая ветка от develop
-git checkout develop && git pull
-git checkout -b feature/SAUDA-045-cart-api
+> **MVP:** деплой на сервер **отключён** по умолчанию (`DEPLOY_ENABLED` не задан).  
+> CI работает без сервера. Чтобы включить CD — см. [docs/setup.md](docs/setup.md) и [infrastructure/deploy/README.md](infrastructure/deploy/README.md).
 
-# 2. Разработка + локальные тесты
-cd backend/sauda-api && ./mvnw verify
-cd frontend/sauda-web && npm test && npm run build
+| Ветка / событие | Окружение | Workflow |
+|-----------------|-----------|----------|
+| `develop` | DEV | `deploy-dev.yml` (если `DEPLOY_ENABLED=true`) |
+| `release/*` | TEST | `deploy-test.yml` (если `DEPLOY_ENABLED=true`) |
+| `main` | — | **автодеплоя нет**, только CI |
+| Ручной запуск | PROD | `deploy-prod.yml` + approval |
 
-# 3. Push и PR в develop (не в main!)
-git push -u origin feature/SAUDA-045-cart-api
-# → GitHub: Pull Request → develop
-# → CI должен пройти → code review → merge
+Шаги деплоя: сборка образа → push в GHCR → SSH на сервер → `docker compose pull` → `docker compose up -d`.
 
-# 4. После merge в develop — автодеплой на DEV (когда CD включён)
-```
+Необходимые секреты GitHub: `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN`.
 
-### Что происходит на каждом этапе
-
-| Этап | Кто запускает | Что проверяется | Деплой на сервер |
-|------|---------------|-----------------|------------------|
-| PR в `develop` | Авто (CI) | Код, тесты, quality gates | Нет |
-| Merge в `develop` | Авто (CD*) | — | DEV |
-| Push `release/*` | Авто (CD*) | QA на TEST | TEST |
-| Merge в `main` | Авто (CI) | Сборка релиза | **Нет** |
-| Deploy PROD | **Вручную** | Approval в GitHub | PROD |
-
-\* CD работает только если `DEPLOY_ENABLED=true` (см. ниже).
-
----
-
-## CI/CD: как это устроено
-
-### Continuous Integration (работает уже сейчас)
-
-CI **не требует сервера** — запускается на GitHub runners.
-
-| Workflow | Когда | Что делает |
-|----------|-------|------------|
-| `backend-ci.yml` | PR, push в `develop` / `main` | Maven verify, JaCoCo ≥70%, Checkstyle, Spotless, сборка JAR и Docker-образа |
-| `frontend-ci.yml` | PR, push в `develop` / `main` | ESLint, TypeScript, Vitest, `vite build`, сборка Docker-образа |
-
-При ошибке на любом шаге — **pipeline падает**, merge блокируется (если настроен branch protection).
-
-### Continuous Deployment (заглушка для MVP)
-
-> **Сейчас:** CD **отключён по умолчанию**. Workflow запускается, но вместо SSH выводит notice «Deploy disabled (MVP)» и **ничего не ломает**.
-
-| Workflow | Триггер | Окружение | Профиль |
-|----------|---------|-----------|---------|
-| `deploy-dev.yml` | Push в `develop` | DEV | `dev` |
-| `deploy-test.yml` | Push в `release/*` | TEST | `test` |
-| `deploy-prod.yml` | **Только вручную** (Actions → Run workflow) | PROD | `prod` |
-
-Push в `main` **не деплоит** — только прогоняет CI.
-
-#### Что делает deploy-workflow (когда включён)
-
-```
-1. Checkout кода
-2. docker build → push образов в GHCR
-      ghcr.io/<org>/<repo>/sauda-api:dev-latest
-      ghcr.io/<org>/<repo>/sauda-web:dev-latest
-3. SSH на сервер (/opt/sauda)
-4. docker compose pull
-5. docker compose up -d
-```
-
----
-
-## Как включить реальный деплой (чеклист)
-
-Когда появится сервер — выполните **все** пункты. Без любого из них деплой не сработает.
-
-### Шаг 1. Сервер
-
-```bash
-sudo mkdir -p /opt/sauda && cd /opt/sauda
-git clone git@github.com:YOUR_ORG/sauda.git .
-cp infrastructure/deploy/server.env.example .env
-nano .env   # пароли, образы, профиль
-```
-
-На сервере должны быть:
-- Docker + Docker Compose plugin
-- `docker login ghcr.io` (PAT с `read:packages`)
-- Открыт SSH для GitHub Actions
-- Файлы: `docker-compose.yml`, `.env`, `infrastructure/nginx/nginx.conf`
-
-Шаблон `.env`: [infrastructure/deploy/server.env.example](infrastructure/deploy/server.env.example)
-
-### Шаг 2. GitHub Secrets
-
-**Settings → Secrets and variables → Actions → Repository secrets**
-
-| Secret | Значение | Зачем |
-|--------|----------|-------|
-| `GHCR_USERNAME` | Ваш GitHub login | Push образов в registry |
-| `GHCR_TOKEN` | PAT (`write:packages`, `read:packages`) | Авторизация в GHCR |
-| `SERVER_HOST` | IP или домен сервера | SSH-подключение |
-| `SERVER_USER` | SSH-пользователь, напр. `deploy` | SSH-подключение |
-| `SERVER_SSH_KEY` | Приватный ключ целиком | SSH-подключение |
-
-> Для **разных серверов** DEV / TEST / PROD — задайте secrets **на уровне Environment**, а не repository.
-
-### Шаг 3. GitHub Environments
-
-**Settings → Environments**
-
-| Environment | Когда используется | Approval |
-|-------------|-------------------|----------|
-| `dev` | Push в `develop` | Не нужен |
-| `test` | Push в `release/*` | Не нужен |
-| `production` | Ручной Deploy PROD | **Required reviewers** — обязательно |
-
-### Шаг 4. Включить CD (главный переключатель)
-
-**Settings → Secrets and variables → Actions → Variables**
-
-| Variable | Value |
-|----------|-------|
-| `DEPLOY_ENABLED` | `true` |
-
-До этого шага deploy-workflows **безопасно пропускают** деплой.
-
-### Шаг 5. Branch protection
-
-**Settings → Branches**
-
-- `main` и `develop`: require PR, require CI checks (Backend CI + Frontend CI)
-
-### Шаг 6. Проверка
-
-```bash
-# После merge в develop — смотрите Actions → Deploy DEV
-# На сервере:
-docker ps
-curl http://SERVER_HOST/api/v1/health
-```
-
----
-
-## Состояния CD (шпаргалка)
-
-| `DEPLOY_ENABLED` | Secrets | Сервер | Результат |
-|------------------|---------|--------|-----------|
-| не задан / `false` | — | — | CI ✅, CD ⏸ (notice, без ошибок) |
-| `true` | ❌ нет | — | Workflow **упадёт** на login/SSH |
-| `true` | ✅ есть | ❌ нет | Workflow **упадёт** на SSH |
-| `true` | ✅ есть | ✅ готов | **Реальный деплой** ✅ |
-
----
-
-## PROD-релиз (когда CD включён)
-
-1. QA прошёл на TEST (`release/1.0.0`)
-2. Merge `release/*` → `main` (prod **ещё не обновился**)
-3. **Actions → Deploy PROD → Run workflow**
-   - `git_ref`: `main`
-4. Подтвердите deployment в environment `production`
-5. Проверка: `GET /api/v1/health` → `{"status":"UP",...}`
-
----
-
-## Дополнительная документация
-
-| Документ | Содержание |
-|----------|------------|
-| [docs/setup.md](docs/setup.md) | Настройка GitHub и сервера |
-| [docs/cicd.md](docs/cicd.md) | Детали пайплайнов |
-| [docs/branching.md](docs/branching.md) | Стратегия веток |
-| [docs/environments.md](docs/environments.md) | Профили Spring и переменные |
-| [infrastructure/deploy/README.md](infrastructure/deploy/README.md) | Шаблон сервера |
-
----
+Подробнее: [docs/cicd.md](docs/cicd.md)
 
 ## Quality Gates
 
