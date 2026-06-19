@@ -63,6 +63,12 @@ CD (SSH-деплой) включается одной переменной, ко
 
 После merge hotfix в `main` проверьте открытый PR **main → develop**, дождитесь CI и смержите.
 
+**Настройка GitHub (обязательно для auto back-merge):**
+
+Settings → Actions → General → **Allow GitHub Actions to create and approve pull requests** ✅
+
+Альтернатива: repository secret **`REPO_PAT`** — Personal Access Token с правами `repo`.
+
 Подробнее: [branching.md](branching.md)
 
 ## Continuous Deployment

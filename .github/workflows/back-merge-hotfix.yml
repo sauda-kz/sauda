@@ -1,6 +1,6 @@
 name: Back-merge hotfix to develop
 
-# После merge hotfix/* → main автоматически создаёт PR main → develop
+# После merge hotfix/* → main создаёт PR main → develop
 on:
   pull_request:
     types:
@@ -9,7 +9,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -21,47 +21,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Create pull request to develop
-        uses: actions/github-script@v7
+      - name: Checkout develop
+        uses: actions/checkout@v4
         with:
-          script: |
-            const hotfixBranch = context.payload.pull_request.head.ref;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const title = `chore: back-merge hotfix ${hotfixBranch} to develop`;
-            const head = 'main';
-            const base = 'develop';
-            const body = [
-              '## Automatic back-merge',
-              '',
-              `Hotfix branch \`${hotfixBranch}\` was merged into \`main\`.`,
-              '',
-              'This PR syncs the fix into `develop`.',
-              '',
-              '- [ ] CI passed',
-              '- [ ] Ready to merge',
-            ].join('\n');
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.REPO_PAT || github.token }}
 
-            const existing = await github.rest.pulls.list({
-              owner,
-              repo,
-              state: 'open',
-              head: `${owner}:${head}`,
-              base,
-            });
+      - name: Merge main into develop
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge origin/main --no-edit -m "chore: back-merge hotfix ${{ github.event.pull_request.head.ref }} from main"
 
-            if (existing.data.length > 0) {
-              core.info(`Open back-merge PR already exists: #${existing.data[0].number}`);
-              return;
-            }
+      - name: Create pull request to develop
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.REPO_PAT || github.token }}
+          branch: back-merge/${{ github.event.pull_request.head.ref }}
+          base: develop
+          title: "chore: back-merge hotfix ${{ github.event.pull_request.head.ref }} to develop"
+          body: |
+            ## Automatic back-merge
 
-            const pr = await github.rest.pulls.create({
-              owner,
-              repo,
-              title,
-              head,
-              base,
-              body,
-            });
+            Hotfix `${{ github.event.pull_request.head.ref }}` merged into `main`.
 
-            core.info(`Created back-merge PR #${pr.data.number}`);
+            Syncs the fix into `develop`.
+
+            - [ ] CI passed
+            - [ ] Ready to merge
+          delete-branch: true
+
+      - name: Hint if PR creation is blocked
+        if: failure()
+        run: |
+          echo "::error::Back-merge PR could not be created."
+          echo "Enable ONE of the following in GitHub:"
+          echo "  1. Settings → Actions → General → Allow GitHub Actions to create and approve pull requests"
+          echo "  2. Add repository secret REPO_PAT (PAT with repo scope)"
+          echo "Or create PR manually: main → develop"
