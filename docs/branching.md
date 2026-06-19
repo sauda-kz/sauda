@@ -43,8 +43,38 @@ release/1.0.0  ──► TEST
 ### Hotfix
 
 ```
-main → hotfix/1.0.1 → main → PROD (вручную) → develop
+main
+ │
+ ▼
+hotfix/1.0.1-fix
+ │
+ ├──► PR → main   (CI: Backend CI + Frontend CI)
+ │         │
+ │         ▼ merge
+ │     Deploy PROD (вручную)
+ │
+ └──► back-merge PR main → develop  (создаётся автоматически)
+           │
+           ▼ merge
+       develop синхронизирован
 ```
+
+**Порядок действий:**
+
+1. `git checkout main && git pull && git checkout -b hotfix/1.0.1-fix`
+2. Исправление + push → CI на ветке `hotfix/**`
+3. PR `hotfix/1.0.1-fix` → **`main`** — CI обязателен
+4. Merge в `main` → CI на `main`
+5. **Actions → Deploy PROD** (вручную)
+6. GitHub Actions создаёт PR **`main` → `develop`** (workflow `back-merge-hotfix.yml`)
+7. Merge back-merge PR в `develop` — CI на PR в `develop`
+
+> **Если back-merge упал с 403:** включите в GitHub  
+> **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests**  
+> или добавьте secret `REPO_PAT` (PAT с правами `repo`).  
+> Вручную: PR `main` → `develop`.
+
+> Не удаляйте ветку `hotfix/*` до merge в `main` — иначе back-merge не запустится.
 
 ## Соответствие окружений
 
@@ -60,7 +90,10 @@ main → hotfix/1.0.1 → main → PROD (вручную) → develop
 ## Pull Request
 
 - Нет прямых push в `main`
-- CI обязателен: Backend CI + Frontend CI
+- CI обязателен: **Backend CI / Build, Test and Quality Gates** + **Frontend CI / Build, Test and Quality Gates**
+- CI запускается на:
+  - PR в `main` или `develop` (в т.ч. hotfix → main, back-merge → develop)
+  - Push в `main`, `develop`, `hotfix/**`, `release/**`, `feature/**`
 - Минимум 1 approval
 
 ## Именование

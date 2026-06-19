@@ -108,7 +108,7 @@ GitFlow-подход:
 - `develop` — интеграционная ветка
 - `feature/*` — новая функциональность
 - `release/*` — стабилизация релиза
-- `hotfix/*` — срочные исправления в проде
+- `hotfix/*` — срочные исправления в проде (от `main`, back-merge в `develop` — см. [branching.md](docs/branching.md))
 
 Прямые push в `main` запрещены. Все изменения — через Pull Request.
 
@@ -120,8 +120,9 @@ GitFlow-подход:
 
 | Workflow | Триггеры | Проверки |
 |----------|----------|----------|
-| `backend-ci.yml` | PR, `develop`, `main` | Verify, тесты, JaCoCo (≥70%), Checkstyle, Spotless, JAR, Docker build |
-| `frontend-ci.yml` | PR, `develop`, `main` | Lint, type check, build, тесты, Docker build |
+| `backend-ci.yml` | PR → `main`/`develop`, push `main`/`develop`/`hotfix/**`/`release/**`/`feature/**` | Verify, тесты, JaCoCo, Checkstyle, Spotless, JAR, Docker build |
+| `frontend-ci.yml` | PR → `main`/`develop`, push `main`/`develop`/`hotfix/**`/`release/**`/`feature/**` | Lint, type check, build, тесты, Docker build |
+| `back-merge-hotfix.yml` | Merge `hotfix/*` → `main` | Авто-PR `main` → `develop` |
 
 Пайплайн падает при любой ошибке.
 

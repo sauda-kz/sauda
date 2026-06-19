@@ -1,0 +1,63 @@
+name: Back-merge hotfix to develop
+
+# После merge hotfix/* → main создаёт PR main → develop
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-back-merge-pr:
+    name: Create back-merge PR
+    if: |
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'hotfix/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.REPO_PAT || github.token }}
+
+      - name: Merge main into develop
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge origin/main --no-edit -m "chore: back-merge hotfix ${{ github.event.pull_request.head.ref }} from main"
+
+      - name: Create pull request to develop
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.REPO_PAT || github.token }}
+          branch: back-merge/${{ github.event.pull_request.head.ref }}
+          base: develop
+          title: "chore: back-merge hotfix ${{ github.event.pull_request.head.ref }} to develop"
+          body: |
+            ## Automatic back-merge
+
+            Hotfix `${{ github.event.pull_request.head.ref }}` merged into `main`.
+
+            Syncs the fix into `develop`.
+
+            - [ ] CI passed
+            - [ ] Ready to merge
+          delete-branch: true
+
+      - name: Hint if PR creation is blocked
+        if: failure()
+        run: |
+          echo "::error::Back-merge PR could not be created."
+          echo "Enable ONE of the following in GitHub:"
+          echo "  1. Settings → Actions → General → Allow GitHub Actions to create and approve pull requests"
+          echo "  2. Add repository secret REPO_PAT (PAT with repo scope)"
+          echo "Or create PR manually: main → develop"
