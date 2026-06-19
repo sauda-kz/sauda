@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME:sauda_prod}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
+    com.sauda: INFO
+    org.springframework: WARN
+
+sauda:
+  integrations:
+    whatsapp:
+      api-url: ${WHATSAPP_API_URL}
+    payment:
+      provider-url: ${PAYMENT_PROVIDER_URL}
+    supplier:
+      import-url: ${SUPPLIER_IMPORT_URL}
+
+management:
+  endpoint:
+    health:
+      show-details: never

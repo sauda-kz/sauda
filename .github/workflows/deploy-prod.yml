@@ -1,0 +1,99 @@
+name: Deploy PROD
+
+# PROD деплоится только вручную. Push в main НЕ запускает деплой.
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Git ref для деплоя (обычно main)
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/sauda-api
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/sauda-web
+
+jobs:
+  deploy-skipped:
+    name: Deploy disabled (MVP)
+    if: vars.DEPLOY_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print notice
+        run: |
+          echo "PROD deploy is disabled for MVP."
+          echo "When the production server is ready:"
+          echo "  1. Configure GitHub Secrets and environment 'production' with required reviewers"
+          echo "  2. Prepare /opt/sauda on the server (see infrastructure/deploy/)"
+          echo "  3. Set repository variable DEPLOY_ENABLED=true"
+          echo "  4. Run this workflow again and approve deployment"
+          echo "See docs/setup.md for details."
+
+  deploy-prod:
+    name: Deploy to PROD
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/Dockerfile.backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            ${{ env.BACKEND_IMAGE }}:prod-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/Dockerfile.frontend
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+            ${{ env.FRONTEND_IMAGE }}:prod-latest
+          build-args: |
+            VITE_API_URL=/api
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to PROD server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/sauda
+            export BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:prod-latest
+            export FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:prod-latest
+            export SPRING_PROFILES_ACTIVE=prod
+            docker compose pull
+            docker compose up -d

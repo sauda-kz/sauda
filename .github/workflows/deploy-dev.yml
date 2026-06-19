@@ -1,0 +1,92 @@
+name: Deploy DEV
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/sauda-api
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/sauda-web
+
+jobs:
+  deploy-skipped:
+    name: Deploy disabled (MVP)
+    if: vars.DEPLOY_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print notice
+        run: |
+          echo "CD deploy is disabled for MVP."
+          echo "When the server is ready:"
+          echo "  1. Configure GitHub Secrets (SERVER_HOST, SERVER_USER, SERVER_SSH_KEY, GHCR_*)"
+          echo "  2. Create environment 'dev' in GitHub"
+          echo "  3. Set repository variable DEPLOY_ENABLED=true"
+          echo "See docs/setup.md for details."
+
+  deploy:
+    name: Deploy to DEV
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/Dockerfile.backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            ${{ env.BACKEND_IMAGE }}:dev-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/Dockerfile.frontend
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+            ${{ env.FRONTEND_IMAGE }}:dev-latest
+          build-args: |
+            VITE_API_URL=/api
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to DEV server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/sauda
+            export BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:dev-latest
+            export FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:dev-latest
+            export SPRING_PROFILES_ACTIVE=dev
+            docker compose pull
+            docker compose up -d
