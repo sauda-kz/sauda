@@ -69,7 +69,12 @@ hotfix/1.0.1-fix
 6. GitHub Actions создаёт PR **`main` → `develop`** (workflow `back-merge-hotfix.yml`)
 7. Merge back-merge PR в `develop` — CI на PR в `develop`
 
-> Не удаляйте ветку `hotfix/*` до merge в `main` — иначе back-merge PR не создастся.
+> **Если back-merge упал с 403:** включите в GitHub  
+> **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests**  
+> или добавьте secret `REPO_PAT` (PAT с правами `repo`).  
+> Вручную: PR `main` → `develop`.
+
+> Не удаляйте ветку `hotfix/*` до merge в `main` — иначе back-merge не запустится.
 
 ## Соответствие окружений
 
