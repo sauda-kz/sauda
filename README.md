@@ -86,19 +86,51 @@ docker compose up -d --build
 - API: `http://localhost/api/v1/health`
 - Actuator: `http://localhost/actuator/health`
 
-## Стратегия окружений
+## Окружения: локально, DEV, TEST, PROD
 
-Поведение задаётся Spring-профилями:
+> **Сейчас (MVP без сервера):** работает только **локальная** разработка.  
+> Серверные DEV / TEST / PROD включаются позже (`DEPLOY_ENABLED=true` в GitHub).
 
-| Профиль | Назначение | Интеграции |
-|---------|------------|------------|
-| `dev` | Локальная разработка | Mock |
-| `test` | QA / изолированное тестирование | Mock |
-| `prod` | Продакшен | Реальные |
+| | **Локально** | **DEV** | **TEST** | **PROD** |
+|---|:---:|:---:|:---:|:---:|
+| **Где** | Ноутбук разработчика | Сервер (удалённо) | Сервер (удалённо) | Production-сервер |
+| **Для кого** | Разработчики | Команда | QA / пользователи перед релизом | Реальные клиенты |
+| **Spring-профиль** | `dev` | `dev` | `test` | `prod` |
+| **Интеграции** | Mock | Mock | Mock | Реальные (WhatsApp, платежи, поставщики) |
+| **Git-ветка** | `feature/*` | `develop` | `release/*` | `main` |
+| **Как попадает код** | `git pull`, локальный запуск | Merge PR → `develop` | Ветка `release/1.0.0` | Merge release → `main`, затем **ручной** Deploy PROD |
+| **Автодеплой (CD)** | — | ✅ push в `develop`* | ✅ push в `release/*`* | ❌ только вручную + approval |
+| **Workflow** | — | `deploy-dev.yml` | `deploy-test.yml` | `deploy-prod.yml` |
+| **Как запустить сейчас** | `docker compose up` или `mvnw` / `npm run dev` | Нужен сервер | Нужен сервер | Нужен сервер |
 
-Активация: `SPRING_PROFILES_ACTIVE=dev|test|prod`
+\* CD работает только при `DEPLOY_ENABLED=true` и настроенных GitHub Secrets.
 
-Подробнее: [docs/environments.md](docs/environments.md)
+### Путь релиза
+
+```
+feature/*  →  develop  →  DEV-сервер     (команда проверяет)
+                ↓
+           release/*  →  TEST-сервер     (пользователи / QA)
+                ↓
+             main     →  CI only        (prod ещё не меняется)
+                ↓
+        Deploy PROD    →  PROD           (вручную, с approval)
+```
+
+### Локально vs DEV-сервер
+
+Оба используют профиль **`dev`**, но это разные вещи:
+
+| | Локально | DEV-сервер |
+|---|----------|------------|
+| Машина | Ваш компьютер | Облако / VPS |
+| Нужен интернет-сервер | Нет | Да |
+| Команда видит одну версию | Нет | Да |
+| Запуск | `cp .env.example .env && docker compose up` | GitHub Actions → SSH → `docker compose up` |
+
+Активация профиля: `SPRING_PROFILES_ACTIVE=dev|test|prod`
+
+Подробнее: [docs/environments.md](docs/environments.md) · [docs/setup.md](docs/setup.md)
 
 ## Стратегия веток
 
