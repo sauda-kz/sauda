@@ -1,11 +1,12 @@
 -- =====================================================================
 -- Sauda — initial schema (Flyway migration V2)
--- Full target model: identity/orgs, product catalog (supply-side, Phase 0),
--- lots & matching, buyer flow (cart/order), data-ingestion ops.
+-- Full target model: identity/orgs + RBAC, product catalog (supply-side,
+-- Phase 0), lots & matching, buyer flow (cart/order), data-ingestion ops.
 --
 -- Notes:
 --   * Money stored as NUMERIC(14,2) in minor-unit-safe precision; never float.
 --   * Organization-based isolation enforced in app + via FKs to organization.
+--   * RBAC: role / permission / role_permission / app_user_role (many-to-many).
 --   * Buyer block (cart/order/...) is created now but not exercised in Phase 0.
 -- =====================================================================
 
@@ -17,8 +18,6 @@ CREATE EXTENSION IF NOT EXISTS "citext";     -- case-insensitive email
 -- ENUM types
 -- =====================================================================
 CREATE TYPE organization_type AS ENUM ('platform', 'distributor', 'buyer');
-
-CREATE TYPE user_role AS ENUM ('platform_admin', 'buyer', 'distributor.manager');
 
 CREATE TYPE vat_status AS ENUM ('with_vat', 'without_vat', 'unknown');
 
@@ -55,15 +54,167 @@ CREATE TABLE organization (
 CREATE TABLE app_user (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id  UUID NOT NULL REFERENCES organization(id) ON DELETE RESTRICT,
-    email            CITEXT,                       -- requires citext; see note below
+    email            CITEXT,
     password_hash    TEXT NOT NULL,
-    role             user_role NOT NULL,
     is_active        BOOLEAN NOT NULL DEFAULT TRUE,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
--- email unique per platform; CITEXT keeps it case-insensitive
 CREATE UNIQUE INDEX ux_app_user_email ON app_user (email);
 CREATE INDEX ix_app_user_org ON app_user (organization_id);
+
+-- =====================================================================
+-- RBAC  (scalable role / permission model)
+-- =====================================================================
+CREATE TABLE app_role (
+    id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code               TEXT NOT NULL,
+    organization_type  organization_type NOT NULL,
+    name               TEXT NOT NULL,
+    description        TEXT,
+    created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT uq_role_code UNIQUE (code)
+);
+
+CREATE TABLE permission (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code        TEXT NOT NULL,
+    resource    TEXT NOT NULL,
+    action      TEXT NOT NULL,
+    description TEXT,
+    CONSTRAINT uq_permission_code UNIQUE (code)
+);
+
+CREATE TABLE role_permission (
+    role_id       UUID NOT NULL REFERENCES app_role(id) ON DELETE CASCADE,
+    permission_id UUID NOT NULL REFERENCES permission(id) ON DELETE CASCADE,
+    PRIMARY KEY (role_id, permission_id)
+);
+
+CREATE TABLE app_user_role (
+    user_id     UUID NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+    role_id     UUID NOT NULL REFERENCES app_role(id) ON DELETE RESTRICT,
+    granted_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, role_id)
+);
+CREATE INDEX ix_app_user_role_role ON app_user_role (role_id);
+
+-- Role must match the user's organization type (platform / distributor / buyer).
+CREATE OR REPLACE FUNCTION check_user_role_org_type()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM app_user u
+        JOIN organization o ON o.id = u.organization_id
+        JOIN app_role r ON r.id = NEW.role_id
+        WHERE u.id = NEW.user_id
+          AND r.organization_type = o.type
+    ) THEN
+        RAISE EXCEPTION 'role organization_type does not match user organization type';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_app_user_role_org_type
+    BEFORE INSERT OR UPDATE ON app_user_role
+    FOR EACH ROW
+    EXECUTE FUNCTION check_user_role_org_type();
+
+-- ---------- RBAC seed: roles ----------
+INSERT INTO app_role (code, organization_type, name, description) VALUES
+    ('platform_admin',      'platform',    'Platform Admin',       'Platform operations: catalog, lots, matching oversight'),
+    ('buyer',               'buyer',       'Buyer',                'Browse offers, manage cart and create orders'),
+    ('buyer_approver',      'buyer',       'Buyer Approver',       'Approve purchase orders within spend limits'),
+    ('distributor_manager', 'distributor', 'Distributor Manager',  'Manage offers, imports and lot matches'),
+    ('distributor_viewer',  'distributor', 'Distributor Viewer',   'Read-only access to distributor data');
+
+-- ---------- RBAC seed: permissions ----------
+INSERT INTO permission (code, resource, action, description) VALUES
+    ('org:read',                  'organization',     'read',   'View organization profile'),
+    ('org:manage',                'organization',     'manage', 'Manage organization settings'),
+    ('canonical_product:read',    'canonical_product','read',   'View canonical product catalog'),
+    ('canonical_product:manage',  'canonical_product','manage', 'Create and update canonical products'),
+    ('offer:read',                'offer',            'read',   'View offers / price list positions'),
+    ('offer:manage',              'offer',            'manage', 'Create and update offers'),
+    ('import:run',                'import',           'run',    'Upload and run price list imports'),
+    ('import:read',               'import',           'read',   'View import run history and errors'),
+    ('lot:read',                  'lot',              'read',   'View procurement lots'),
+    ('lot:create',                'lot',              'create', 'Create procurement lots'),
+    ('lot:manage',                'lot',              'manage', 'Update and archive lots'),
+    ('lot_match:read',            'lot_match',        'read',   'View lot-to-offer matches'),
+    ('lot_match:review',          'lot_match',        'review', 'Review and update match status'),
+    ('lot_match:manage',          'lot_match',        'manage', 'Full control over lot matches'),
+    ('cart:read',                 'cart',             'read',   'View shopping carts'),
+    ('cart:manage',               'cart',             'manage', 'Create and update carts'),
+    ('order:read',                'order',            'read',   'View purchase orders'),
+    ('order:create',              'order',            'create', 'Create and submit purchase orders'),
+    ('order:approve',             'order',            'approve','Approve or reject purchase orders'),
+    ('cost_center:read',          'cost_center',      'read',   'View cost centers'),
+    ('cost_center:manage',        'cost_center',      'manage', 'Manage cost centers'),
+    ('spend_limit:read',          'spend_limit',      'read',   'View spend limits'),
+    ('spend_limit:manage',        'spend_limit',      'manage', 'Manage spend limits');
+
+-- ---------- RBAC seed: role → permission mappings ----------
+INSERT INTO role_permission (role_id, permission_id)
+SELECT r.id, p.id
+FROM app_role r
+JOIN permission p ON p.code IN (
+    'org:read', 'org:manage',
+    'canonical_product:read', 'canonical_product:manage',
+    'offer:read',
+    'import:read',
+    'lot:read', 'lot:create', 'lot:manage',
+    'lot_match:read', 'lot_match:review', 'lot_match:manage'
+)
+WHERE r.code = 'platform_admin';
+
+INSERT INTO role_permission (role_id, permission_id)
+SELECT r.id, p.id
+FROM app_role r
+JOIN permission p ON p.code IN (
+    'org:read',
+    'offer:read',
+    'cart:read', 'cart:manage',
+    'order:read', 'order:create',
+    'cost_center:read'
+)
+WHERE r.code = 'buyer';
+
+INSERT INTO role_permission (role_id, permission_id)
+SELECT r.id, p.id
+FROM app_role r
+JOIN permission p ON p.code IN (
+    'org:read',
+    'offer:read',
+    'cart:read', 'cart:manage',
+    'order:read', 'order:create', 'order:approve',
+    'cost_center:read',
+    'spend_limit:read'
+)
+WHERE r.code = 'buyer_approver';
+
+INSERT INTO role_permission (role_id, permission_id)
+SELECT r.id, p.id
+FROM app_role r
+JOIN permission p ON p.code IN (
+    'org:read',
+    'offer:read', 'offer:manage',
+    'import:run', 'import:read',
+    'lot_match:read', 'lot_match:review'
+)
+WHERE r.code = 'distributor_manager';
+
+INSERT INTO role_permission (role_id, permission_id)
+SELECT r.id, p.id
+FROM app_role r
+JOIN permission p ON p.code IN (
+    'org:read',
+    'offer:read',
+    'import:read',
+    'lot_match:read'
+)
+WHERE r.code = 'distributor_viewer';
 
 -- =====================================================================
 -- Product catalog  (SAUDA-004)
@@ -73,8 +224,8 @@ CREATE TABLE canonical_product (
     normalized_name  TEXT NOT NULL,
     category         TEXT,
     brand            TEXT,
-    model_mpn        TEXT,                          -- model / MPN if known
-    mpn_norm         TEXT,                          -- normalized MPN, matching key
+    model_mpn        TEXT,
+    mpn_norm         TEXT,
     attributes       JSONB NOT NULL DEFAULT '{}'::jsonb,
     is_active        BOOLEAN NOT NULL DEFAULT TRUE,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -86,9 +237,9 @@ CREATE INDEX ix_canonical_brand_model ON canonical_product (brand, model_mpn);
 CREATE TABLE offer (
     id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     distributor_id       UUID NOT NULL REFERENCES organization(id) ON DELETE CASCADE,
-    canonical_product_id UUID REFERENCES canonical_product(id) ON DELETE SET NULL, -- nullable: unmatched offers allowed
-    internal_sku         TEXT,                      -- distributor's own SKU
-    raw_name             TEXT NOT NULL,             -- name as it came in the price list
+    canonical_product_id UUID REFERENCES canonical_product(id) ON DELETE SET NULL,
+    internal_sku         TEXT,
+    raw_name             TEXT NOT NULL,
     brand                TEXT,
     model_mpn            TEXT,
     price                NUMERIC(14,2),
@@ -96,9 +247,9 @@ CREATE TABLE offer (
     vat_status           vat_status NOT NULL DEFAULT 'unknown',
     stock_qty            INTEGER,
     stock_status         stock_status NOT NULL DEFAULT 'unknown',
-    lead_time            TEXT,                      -- free-form lead time if provided
-    last_updated_at      TIMESTAMPTZ,               -- last time this position was refreshed
-    source_file_id       UUID,                      -- import_run / file this came from
+    lead_time            TEXT,
+    last_updated_at      TIMESTAMPTZ,
+    source_file_id       UUID,
     created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX ix_offer_distributor ON offer (distributor_id);
@@ -120,7 +271,7 @@ CREATE INDEX ix_price_history_offer ON price_history (offer_id, captured_at DESC
 -- =====================================================================
 CREATE TABLE lot (
     id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    source             TEXT,                        -- goszakup | samruk | other (manual now)
+    source             TEXT,
     external_lot_id    TEXT,
     title              TEXT,
     customer_name      TEXT,
@@ -135,7 +286,7 @@ CREATE TABLE lot (
     status             lot_status NOT NULL DEFAULT 'active',
     source_url         TEXT,
     raw_data           JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_by         UUID REFERENCES app_user(id) ON DELETE SET NULL, -- platform_admin who entered it
+    created_by         UUID REFERENCES app_user(id) ON DELETE SET NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX ix_lot_status ON lot (status);
@@ -147,7 +298,7 @@ CREATE TABLE lot_match (
     offer_id            UUID NOT NULL REFERENCES offer(id) ON DELETE CASCADE,
     distributor_id      UUID NOT NULL REFERENCES organization(id) ON DELETE CASCADE,
     match_status        lot_match_status NOT NULL DEFAULT 'suggested',
-    confidence_score    NUMERIC(5,4),                -- 0.0000 .. 1.0000
+    confidence_score    NUMERIC(5,4),
     match_reason        TEXT,
     quantity_check      check_result NOT NULL DEFAULT 'unknown',
     stock_check         check_result NOT NULL DEFAULT 'unknown',
@@ -188,7 +339,6 @@ CREATE TABLE import_error (
 );
 CREATE INDEX ix_import_error_run ON import_error (import_run_id);
 
--- offer.source_file_id references import_run (added after import_run exists)
 ALTER TABLE offer
     ADD CONSTRAINT fk_offer_source_file
     FOREIGN KEY (source_file_id) REFERENCES import_run(id) ON DELETE SET NULL;
@@ -207,11 +357,13 @@ CREATE TABLE spend_limit (
     id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     buyer_company_id   UUID NOT NULL REFERENCES organization(id) ON DELETE CASCADE,
     user_id            UUID REFERENCES app_user(id) ON DELETE CASCADE,
-    role               user_role,
-    period             TEXT,                         -- e.g. 'monthly'
-    amount             NUMERIC(14,2) NOT NULL
+    role_id            UUID REFERENCES app_role(id) ON DELETE CASCADE,
+    period             TEXT,
+    amount             NUMERIC(14,2) NOT NULL,
+    CONSTRAINT chk_spend_limit_scope CHECK (NOT (user_id IS NOT NULL AND role_id IS NOT NULL))
 );
 CREATE INDEX ix_spend_limit_buyer ON spend_limit (buyer_company_id);
+CREATE INDEX ix_spend_limit_role ON spend_limit (role_id);
 
 CREATE TABLE cart (
     id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),

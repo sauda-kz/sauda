@@ -1,9 +1,6 @@
 package com.sauda.domain.entity;
 
-import com.sauda.domain.converter.UserRoleConverter;
-import com.sauda.domain.enums.UserRole;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -37,9 +34,9 @@ public class SpendLimit {
     @JoinColumn(name = "user_id")
     private AppUser user;
 
-    @Convert(converter = UserRoleConverter.class)
-    @Column(columnDefinition = "user_role")
-    private UserRole role;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id")
+    private Role role;
 
     private String period;
 
