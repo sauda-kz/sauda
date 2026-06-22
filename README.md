@@ -182,6 +182,7 @@ GitFlow-подход:
 |----------|----------|
 | [architecture.md](docs/architecture.md) | Архитектура monorepo и backend |
 | [auth-rbac.md](docs/auth-rbac.md) | Роли, permissions и модель доступа (RBAC) |
+| [er-diagram.md](docs/er-diagram.md) | ER-диаграмма БД (**обновлять при изменении domain**) |
 | [branching.md](docs/branching.md) | Стратегия веток GitFlow |
 | [cicd.md](docs/cicd.md) | CI/CD пайплайны |
 | [environments.md](docs/environments.md) | Spring-профили и окружения |

@@ -232,4 +232,5 @@ Login → загрузить AppUser + roles + permissions
 ## См. также
 
 - [architecture.md](architecture.md) — слои backend, Spring Security (future)
+- [er-diagram.md](er-diagram.md) — ER-диаграмма (обновлять при изменении схемы)
 - `V2__init.sql` — полная схема и seed

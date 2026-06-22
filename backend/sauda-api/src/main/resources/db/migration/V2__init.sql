@@ -6,7 +6,8 @@
 -- Notes:
 --   * Money stored as NUMERIC(14,2) in minor-unit-safe precision; never float.
 --   * Organization-based isolation enforced in app + via FKs to organization.
---   * RBAC: role / permission / role_permission / app_user_role (many-to-many).
+--   * RBAC: app_role / permission / role_permission / app_user_role (many-to-many).
+--   * After schema changes: update docs/er-diagram.md (Mermaid ER diagram).
 --   * Buyer block (cart/order/...) is created now but not exercised in Phase 0.
 -- =====================================================================
 
