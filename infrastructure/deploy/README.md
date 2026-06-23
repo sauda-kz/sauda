@@ -19,7 +19,7 @@ cp infrastructure/deploy/server.env.example .env
 # Отредактируйте .env — пароли, образы, профиль
 ```
 
-Установите Docker и выполните `docker login ghcr.io`.
+Установите Docker, **GnuPG** (`sudo apt install -y gnupg`) и выполните `docker login ghcr.io`.
 
 ### 2. Настройте GitHub
 
@@ -32,6 +32,7 @@ cp infrastructure/deploy/server.env.example .env
 | `SERVER_HOST` | IP/домен сервера |
 | `SERVER_USER` | SSH-пользователь |
 | `SERVER_SSH_KEY` | Приватный SSH-ключ |
+| `BACKUP_GPG_PASSPHRASE` | Пароль шифрования бэкапов PostgreSQL |
 
 **Environments** (Settings → Environments):
 

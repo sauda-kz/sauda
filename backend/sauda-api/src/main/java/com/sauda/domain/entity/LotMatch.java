@@ -29,7 +29,10 @@ import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 @Entity
 @Table(
         name = "lot_match",
-        uniqueConstraints = @UniqueConstraint(name = "uq_lot_offer", columnNames = {"lot_id", "offer_id"}))
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uq_lot_offer",
+                        columnNames = {"lot_id", "offer_id"}))
 public class LotMatch {
 
     @Id

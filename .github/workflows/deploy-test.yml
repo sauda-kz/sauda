@@ -85,5 +85,14 @@ jobs:
             export BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:test-latest
             export FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:test-latest
             export SPRING_PROFILES_ACTIVE=test
-            docker compose pull
-            docker compose up -d
+            if docker compose version >/dev/null 2>&1; then
+              COMPOSE="docker compose"
+            elif command -v docker-compose >/dev/null 2>&1; then
+              COMPOSE="docker-compose"
+            else
+              echo "Docker Compose not found. Run: apt install -y docker-compose"
+              exit 1
+            fi
+            $COMPOSE pull
+            $COMPOSE down --remove-orphans
+            $COMPOSE up -d

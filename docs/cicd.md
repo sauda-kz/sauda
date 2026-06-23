@@ -110,11 +110,115 @@ ghcr.io/<org>/<repo>/sauda-web:<tag>
 
 Теги: `dev-latest`, `test-latest`, `prod-latest`, `<git-sha>`
 
+## PostgreSQL Backup (`postgres-backup.yml`)
+
+- **Триггер:** ежедневно в **02:00 UTC** (`dev` + `test`); PROD — только **workflow_dispatch** (с approval, если настроен)
+- **Условие:** `DEPLOY_ENABLED=true` (как у CD)
+- **Окружения:** `dev`, `test`, `production` — отдельный job на каждое (secrets с уровня Environment)
+- **На сервере:** `/opt/sauda/backups/<db>_<timestamp>.sql.gz.gpg` (GPG AES-256)
+- **Ротация:** переменная `BACKUP_RETENTION_DAYS` (по умолчанию 14)
+- **На сервере нужен:** `sudo apt install -y gnupg`
+
+### Настройка шифрования
+
+1. Придумайте длинный пароль (passphrase) — **сохраните его в менеджере паролей**
+2. GitHub → **Settings → Environments** → для каждого окружения (`dev`, `test`, `production`):
+   - Secret: `BACKUP_GPG_PASSPHRASE` = ваш passphrase
+3. Для разных серверов можно задать **разные** passphrase на уровне Environment
+
+Файл без пароля **не открыть**. Расшифровка: `gpg --decrypt`.
+
+### Восстановление PostgreSQL (подробно)
+
+Скрипт: `infrastructure/deploy/restore-postgres.sh` (копируется на сервер вместе с репозиторием или вручную).
+
+#### 1. Посмотреть доступные бэкапы
+
+```bash
+ssh user@your-server
+cd /opt/sauda
+ls -lh backups/
+# пример: sauda_prod_20250623_020000.sql.gz.gpg
+```
+
+#### 2. Полное восстановление (рекомендуется)
+
+Останавливает backend, пересоздаёт БД, восстанавливает данные, запускает backend.
+
+```bash
+cd /opt/sauda
+
+# Подставьте реальный файл и passphrase из GitHub Secret BACKUP_GPG_PASSPHRASE
+export BACKUP_GPG_PASSPHRASE='ваш-passphrase-из-github-secret'
+export RECREATE_DB=true
+
+chmod +x infrastructure/deploy/restore-postgres.sh
+./infrastructure/deploy/restore-postgres.sh backups/sauda_prod_20250623_020000.sql.gz.gpg
+```
+
+#### 3. Восстановление вручную (пошагово)
+
+```bash
+cd /opt/sauda
+set -a && source .env && set +a
+
+# 1) Остановить приложение (чтобы не было активных подключений к БД)
+docker compose stop backend
+
+# 2) Пересоздать базу (чистое восстановление)
+docker compose exec -T postgres psql -U "${DB_USER}" -d postgres <<SQL
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = '${DB_NAME}' AND pid <> pg_backend_pid();
+DROP DATABASE IF EXISTS ${DB_NAME};
+CREATE DATABASE ${DB_NAME} OWNER ${DB_USER};
+SQL
+
+# 3) Расшифровать, распаковать и залить SQL в PostgreSQL
+export BACKUP_GPG_PASSPHRASE='ваш-passphrase'
+gpg --batch --yes --passphrase-fd 0 --decrypt backups/sauda_prod_20250623_020000.sql.gz.gpg \
+  | gunzip -c \
+  | docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U "${DB_USER}" -d "${DB_NAME}" \
+  <<< "${BACKUP_GPG_PASSPHRASE}"
+
+# 4) Запустить приложение
+docker compose start backend
+
+# 5) Проверка
+curl -s http://localhost/api/v1/health
+docker compose exec postgres psql -U "${DB_USER}" -d "${DB_NAME}" -c '\dt'
+```
+
+#### 4. Восстановление с локальной машины (файл скачан с сервера)
+
+```bash
+# На своём компьютере (нужны docker, gpg, gunzip)
+export BACKUP_GPG_PASSPHRASE='ваш-passphrase'
+BACKUP=sauda_prod_20250623_020000.sql.gz.gpg
+
+gpg --batch --yes --passphrase-fd 0 --decrypt "${BACKUP}" <<< "${BACKUP_GPG_PASSPHRASE}" \
+  | gunzip -c \
+  | docker compose -f docker-compose.yml exec -T postgres \
+      psql -v ON_ERROR_STOP=1 -U sauda -d sauda_prod
+```
+
+#### 5. Только проверить, что файл читается (без restore в БД)
+
+```bash
+export BACKUP_GPG_PASSPHRASE='ваш-passphrase'
+gpg --batch --yes --passphrase-fd 0 --decrypt backups/sauda_prod_20250623_020000.sql.gz.gpg \
+  <<< "${BACKUP_GPG_PASSPHRASE}" \
+  | gunzip -c \
+  | head -50
+```
+
 ## Secrets и переменные
 
 | Имя | Тип | Назначение |
 |-----|-----|------------|
-| `DEPLOY_ENABLED` | Variable | `true` — включить CD |
+| `DEPLOY_ENABLED` | Variable | `true` — включить CD и backup |
+| `BACKUP_RETENTION_DAYS` | Variable | Сколько дней хранить `.sql.gz.gpg` на сервере (default: 14) |
+| `BACKUP_GPG_PASSPHRASE` | Secret | Пароль для шифрования/расшифровки бэкапов (на уровне Environment) |
 | `GHCR_USERNAME` | Secret | Login в GHCR |
 | `GHCR_TOKEN` | Secret | PAT `write:packages` |
 | `SERVER_HOST` | Secret | IP/домен сервера |

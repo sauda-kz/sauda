@@ -17,7 +17,7 @@ class HealthServiceTest {
     void getHealthReturnsUpStatus() {
         var response = healthService.getHealth();
 
-        assertThat(response.status()).isEqualTo("UP");
+        assertThat(response.status()).isEqualTo("up");
         assertThat(response.service()).isEqualTo("sauda-api");
         assertThat(response.version()).isNotBlank();
     }

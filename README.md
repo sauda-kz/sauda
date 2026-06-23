@@ -35,7 +35,7 @@ sauda/
 - **Nginx** принимает HTTP и направляет `/api` и `/actuator` на backend, остальной трафик — на frontend
 - **PostgreSQL** — основное хранилище; схема управляется через Flyway
 
-Подробнее: [docs/architecture.md](docs/architecture.md)
+Подробнее: [docs/architecture.md](docs/architecture.md) · [docs/auth-rbac.md](docs/auth-rbac.md)
 
 ## Локальный запуск
 
@@ -175,6 +175,18 @@ GitFlow-подход:
 Необходимые секреты GitHub: `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`, `GHCR_USERNAME`, `GHCR_TOKEN`.
 
 Подробнее: [docs/cicd.md](docs/cicd.md)
+
+## Документация
+
+| Документ | Описание |
+|----------|----------|
+| [architecture.md](docs/architecture.md) | Архитектура monorepo и backend |
+| [auth-rbac.md](docs/auth-rbac.md) | Роли, permissions и модель доступа (RBAC) |
+| [er-diagram.md](docs/er-diagram.md) | ER-диаграмма БД (**обновлять при изменении domain**) |
+| [branching.md](docs/branching.md) | Стратегия веток GitFlow |
+| [cicd.md](docs/cicd.md) | CI/CD пайплайны |
+| [environments.md](docs/environments.md) | Spring-профили и окружения |
+| [setup.md](docs/setup.md) | Настройка локально и GitHub |
 
 ## Quality Gates
 
