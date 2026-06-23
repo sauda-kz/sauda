@@ -18,6 +18,6 @@ public class HealthService {
     }
 
     public HealthResponse getHealth() {
-        return new HealthResponse("UP", applicationName, applicationVersion);
+        return new HealthResponse("up", applicationName, applicationVersion);
     }
 }

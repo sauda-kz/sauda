@@ -23,11 +23,11 @@ class HealthControllerTest {
     @Test
     void healthReturnsUpStatus() throws Exception {
         when(healthService.getHealth())
-                .thenReturn(new HealthResponse("UP", "sauda-api", "0.1.0-SNAPSHOT"));
+                .thenReturn(new HealthResponse("up", "sauda-api", "0.1.0-SNAPSHOT"));
 
         mockMvc.perform(get("/api/v1/health"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("UP"))
+                .andExpect(jsonPath("$.status").value("up"))
                 .andExpect(jsonPath("$.service").value("sauda-api"))
                 .andExpect(jsonPath("$.version").value("0.1.0-SNAPSHOT"));
     }
