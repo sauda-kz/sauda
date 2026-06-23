@@ -97,4 +97,6 @@ jobs:
               exit 1
             fi
             $COMPOSE pull
+            # Avoid docker-compose 1.29.x recreate bug (KeyError: ContainerConfig)
+            $COMPOSE down --remove-orphans
             $COMPOSE up -d
