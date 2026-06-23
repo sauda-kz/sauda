@@ -37,26 +37,40 @@ jobs:
           echo "Optional: BACKUP_RETENTION_DAYS (default 14)"
           echo "On server: sudo apt install -y gnupg"
 
+  resolve-targets:
+    name: Resolve backup targets
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.targets.outputs.environments }}
+    steps:
+      - name: Select environments
+        id: targets
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo 'environments=["dev","test"]' >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            case "${{ inputs.environment }}" in
+              all)
+                echo 'environments=["dev","test","production"]' >> "$GITHUB_OUTPUT"
+                ;;
+              *)
+                echo "environments=[\"${{ inputs.environment }}\"]" >> "$GITHUB_OUTPUT"
+                ;;
+            esac
+          else
+            echo "Unsupported event: ${{ github.event_name }}"
+            exit 1
+          fi
+
   backup:
     name: Backup ${{ matrix.environment }}
-    if: >-
-      vars.DEPLOY_ENABLED == 'true' &&
-      (
-        (github.event_name == 'schedule' && matrix.on_schedule) ||
-        (github.event_name == 'workflow_dispatch' &&
-         (inputs.environment == 'all' || inputs.environment == matrix.environment))
-      )
+    needs: resolve-targets
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - environment: dev
-            on_schedule: true
-          - environment: test
-            on_schedule: true
-          - environment: production
-            on_schedule: false
+        environment: ${{ fromJson(needs.resolve-targets.outputs.environments) }}
     environment: ${{ matrix.environment }}
 
     steps:
