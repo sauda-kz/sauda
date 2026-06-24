@@ -18,6 +18,7 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ghcr.io/${{ github.repository }}/sauda-api
   FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/sauda-web
+  IMAGE_TAG: prod-latest
 
 jobs:
   deploy-skipped:
@@ -28,11 +29,6 @@ jobs:
       - name: Print notice
         run: |
           echo "PROD deploy is disabled for MVP."
-          echo "When the production server is ready:"
-          echo "  1. Configure GitHub Secrets and environment 'production' with required reviewers"
-          echo "  2. Prepare /opt/sauda on the server (see infrastructure/deploy/)"
-          echo "  3. Set repository variable DEPLOY_ENABLED=true"
-          echo "  4. Run this workflow again and approve deployment"
           echo "See docs/setup.md for details."
 
   deploy-prod:
@@ -65,7 +61,7 @@ jobs:
           push: true
           tags: |
             ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
-            ${{ env.BACKEND_IMAGE }}:prod-latest
+            ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -77,32 +73,52 @@ jobs:
           push: true
           tags: |
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
-            ${{ env.FRONTEND_IMAGE }}:prod-latest
+            ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
           build-args: |
             VITE_API_URL=/api
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Deploy to PROD server
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Export images for server transfer
+        if: vars.DEPLOY_PULL_FROM_GHCR != 'true'
+        run: |
+          docker pull ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          docker pull ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          mkdir -p deploy-artifacts
+          docker save ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }} | gzip -1 > deploy-artifacts/backend.tar.gz
+          docker save ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }} | gzip -1 > deploy-artifacts/frontend.tar.gz
+          ls -lh deploy-artifacts/
+
+      - name: Copy images to server
+        if: vars.DEPLOY_PULL_FROM_GHCR != 'true'
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          source: deploy-artifacts/*.tar.gz
+          target: /tmp/sauda-deploy
+          strip_components: 1
+
+      - name: Deploy to PROD server
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          BACKEND_IMAGE: ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          FRONTEND_IMAGE: ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          SPRING_PROFILES_ACTIVE: prod
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: BACKEND_IMAGE,FRONTEND_IMAGE,SPRING_PROFILES_ACTIVE,GHCR_USERNAME,GHCR_TOKEN
           script: |
             set -euo pipefail
-            cd /opt/sauda
-            export BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:prod-latest
-            export FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:prod-latest
-            export SPRING_PROFILES_ACTIVE=prod
-            if docker compose version >/dev/null 2>&1; then
-              COMPOSE="docker compose"
-            elif command -v docker-compose >/dev/null 2>&1; then
-              COMPOSE="docker-compose"
+            if [[ "${{ vars.DEPLOY_PULL_FROM_GHCR }}" == "true" ]]; then
+              export SAUDA_DEPLOY_MODE=pull
             else
-              echo "Docker Compose not found. Run: apt install -y docker-compose"
-              exit 1
+              export SAUDA_DEPLOY_MODE=transfer
+              export IMAGE_DIR=/tmp/sauda-deploy
             fi
-            $COMPOSE pull
-            $COMPOSE down --remove-orphans
-            $COMPOSE up -d
+            bash /opt/sauda/infrastructure/deploy/remote-deploy.sh
