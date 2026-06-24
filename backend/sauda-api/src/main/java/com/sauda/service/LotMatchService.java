@@ -144,7 +144,8 @@ public class LotMatchService {
     }
 
     private void assertDistributorOrg(UUID distributorId) {
-        if (!organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor)) {
+        if (!organizationRepository.existsByIdAndType(
+                distributorId, OrganizationType.distributor)) {
             throw new SaudaNotFoundException("Distributor not found: " + distributorId);
         }
     }

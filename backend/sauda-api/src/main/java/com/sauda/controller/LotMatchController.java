@@ -36,8 +36,7 @@ public class LotMatchController {
     @PostMapping("/lot-matches")
     public ResponseEntity<LotMatchResponse> createMatch(
             @Valid @RequestBody CreateLotMatchRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(lotMatchService.createMatch(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(lotMatchService.createMatch(request));
     }
 
     @GetMapping("/lot-matches")

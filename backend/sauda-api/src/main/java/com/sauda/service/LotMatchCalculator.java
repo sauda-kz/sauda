@@ -21,8 +21,7 @@ public class LotMatchCalculator {
         if (offer.getPrice() != null) {
             match.setEstimatedUnitPrice(offer.getPrice());
             if (requiredQuantity > 0) {
-                BigDecimal total =
-                        offer.getPrice().multiply(BigDecimal.valueOf(requiredQuantity));
+                BigDecimal total = offer.getPrice().multiply(BigDecimal.valueOf(requiredQuantity));
                 match.setEstimatedTotalPrice(total);
                 if (lot.getBudgetAmount() != null) {
                     match.setEstimatedMargin(lot.getBudgetAmount().subtract(total));
@@ -32,7 +31,8 @@ public class LotMatchCalculator {
 
         match.setQuantityCheck(resolveQuantityCheck(requiredQuantity, availableQuantity));
         match.setStockCheck(resolveStockCheck(offer.getStockStatus(), availableQuantity));
-        match.setPriceCheck(resolvePriceCheck(lot.getBudgetAmount(), match.getEstimatedTotalPrice()));
+        match.setPriceCheck(
+                resolvePriceCheck(lot.getBudgetAmount(), match.getEstimatedTotalPrice()));
     }
 
     private static CheckResult resolveQuantityCheck(int required, int available) {

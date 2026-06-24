@@ -16,8 +16,14 @@ public interface LotMatchMapper {
     @Mapping(source = "offer.id", target = "offerId")
     @Mapping(source = "distributor.id", target = "distributorId")
     @Mapping(source = "matchStatus", target = "status")
-    @Mapping(source = "matchedRequirements", target = "matchedRequirements", qualifiedByName = "safeList")
-    @Mapping(source = "missingRequirements", target = "missingRequirements", qualifiedByName = "safeList")
+    @Mapping(
+            source = "matchedRequirements",
+            target = "matchedRequirements",
+            qualifiedByName = "safeList")
+    @Mapping(
+            source = "missingRequirements",
+            target = "missingRequirements",
+            qualifiedByName = "safeList")
     @Mapping(source = "riskFlags", target = "riskFlags", qualifiedByName = "safeList")
     LotMatchResponse toResponse(LotMatch match);
 
@@ -38,8 +44,14 @@ public interface LotMatchMapper {
     @Mapping(source = "offer.rawName", target = "offerName")
     @Mapping(source = "offer.brand", target = "brand")
     @Mapping(source = "offer.modelMpn", target = "modelMpn")
-    @Mapping(source = "matchedRequirements", target = "matchedRequirements", qualifiedByName = "safeList")
-    @Mapping(source = "missingRequirements", target = "missingRequirements", qualifiedByName = "safeList")
+    @Mapping(
+            source = "matchedRequirements",
+            target = "matchedRequirements",
+            qualifiedByName = "safeList")
+    @Mapping(
+            source = "missingRequirements",
+            target = "missingRequirements",
+            qualifiedByName = "safeList")
     @Mapping(source = "riskFlags", target = "riskFlags", qualifiedByName = "safeList")
     DistributorLotMatchCardResponse toDistributorCard(LotMatch match);
 
