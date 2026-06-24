@@ -16,12 +16,16 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcType;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -62,6 +66,24 @@ public class LotMatch {
     @Column(name = "match_reason")
     private String matchReason;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "matched_requirements", columnDefinition = "jsonb")
+    private List<String> matchedRequirements = new ArrayList<>();
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "missing_requirements", columnDefinition = "jsonb")
+    private List<String> missingRequirements = new ArrayList<>();
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "risk_flags", columnDefinition = "jsonb")
+    private List<String> riskFlags = new ArrayList<>();
+
+    @Column(name = "required_quantity", nullable = false)
+    private int requiredQuantity;
+
+    @Column(name = "available_quantity", nullable = false)
+    private int availableQuantity;
+
     @Enumerated(EnumType.STRING)
     @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(name = "quantity_check", nullable = false, columnDefinition = "check_result")
@@ -77,11 +99,26 @@ public class LotMatch {
     @Column(name = "price_check", nullable = false, columnDefinition = "check_result")
     private CheckResult priceCheck = CheckResult.unknown;
 
+    @Column(name = "estimated_unit_price", precision = 14, scale = 2)
+    private BigDecimal estimatedUnitPrice;
+
+    @Column(name = "estimated_total_price", precision = 14, scale = 2)
+    private BigDecimal estimatedTotalPrice;
+
+    @Column(name = "budget_amount", precision = 14, scale = 2)
+    private BigDecimal budgetAmount;
+
     @Column(name = "estimated_margin", precision = 14, scale = 2)
     private BigDecimal estimatedMargin;
 
     @Column(name = "needs_manual_review", nullable = false)
     private boolean needsManualReview = true;
+
+    @Column(name = "admin_comment", nullable = false)
+    private String adminComment = "";
+
+    @Column(name = "distributor_comment")
+    private String distributorComment;
 
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
     private Instant createdAt;
