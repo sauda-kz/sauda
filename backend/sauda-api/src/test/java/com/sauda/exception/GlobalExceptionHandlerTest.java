@@ -28,6 +28,18 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleSaudaNotFoundExceptionReturnsNotFound() {
+        var response =
+                handler.handleSaudaNotFoundException(
+                        new SaudaNotFoundException("Lot not found"), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        ApiErrorResponse body = response.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.message()).isEqualTo("Lot not found");
+    }
+
+    @Test
     void handleGenericExceptionReturnsInternalServerError() {
         var response = handler.handleGenericException(new RuntimeException("boom"), request);
 
