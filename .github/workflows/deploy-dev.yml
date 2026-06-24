@@ -14,6 +14,7 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ghcr.io/${{ github.repository }}/sauda-api
   FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/sauda-web
+  IMAGE_TAG: dev-latest
 
 jobs:
   deploy-skipped:
@@ -58,7 +59,7 @@ jobs:
           push: true
           tags: |
             ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
-            ${{ env.BACKEND_IMAGE }}:dev-latest
+            ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -70,33 +71,52 @@ jobs:
           push: true
           tags: |
             ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
-            ${{ env.FRONTEND_IMAGE }}:dev-latest
+            ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
           build-args: |
             VITE_API_URL=/api
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Deploy to DEV server
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Export images for server transfer
+        if: vars.DEPLOY_PULL_FROM_GHCR != 'true'
+        run: |
+          docker pull ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          docker pull ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          mkdir -p deploy-artifacts
+          docker save ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }} | gzip -1 > deploy-artifacts/backend.tar.gz
+          docker save ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }} | gzip -1 > deploy-artifacts/frontend.tar.gz
+          ls -lh deploy-artifacts/
+
+      - name: Copy images to server
+        if: vars.DEPLOY_PULL_FROM_GHCR != 'true'
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          source: deploy-artifacts/*.tar.gz
+          target: /tmp/sauda-deploy
+          strip_components: 1
+
+      - name: Deploy to DEV server
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          BACKEND_IMAGE: ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          FRONTEND_IMAGE: ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          SPRING_PROFILES_ACTIVE: dev
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: BACKEND_IMAGE,FRONTEND_IMAGE,SPRING_PROFILES_ACTIVE,GHCR_USERNAME,GHCR_TOKEN
           script: |
             set -euo pipefail
-            cd /opt/sauda
-            export BACKEND_IMAGE=${{ env.BACKEND_IMAGE }}:dev-latest
-            export FRONTEND_IMAGE=${{ env.FRONTEND_IMAGE }}:dev-latest
-            export SPRING_PROFILES_ACTIVE=dev
-            if docker compose version >/dev/null 2>&1; then
-              COMPOSE="docker compose"
-            elif command -v docker-compose >/dev/null 2>&1; then
-              COMPOSE="docker-compose"
+            if [[ "${{ vars.DEPLOY_PULL_FROM_GHCR }}" == "true" ]]; then
+              export SAUDA_DEPLOY_MODE=pull
             else
-              echo "Docker Compose not found. Run: apt install -y docker-compose"
-              exit 1
+              export SAUDA_DEPLOY_MODE=transfer
+              export IMAGE_DIR=/tmp/sauda-deploy
             fi
-            $COMPOSE pull
-            # Avoid docker-compose 1.29.x recreate bug (KeyError: ContainerConfig)
-            $COMPOSE down --remove-orphans
-            $COMPOSE up -d
+            bash /opt/sauda/infrastructure/deploy/remote-deploy.sh
