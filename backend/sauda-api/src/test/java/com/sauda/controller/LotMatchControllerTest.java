@@ -5,11 +5,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sauda.domain.enums.CheckResult;
 import com.sauda.domain.enums.LotMatchStatus;
+import com.sauda.dto.lotmatch.CreateLotMatchRequest;
 import com.sauda.dto.lotmatch.DistributorLotMatchCardResponse;
+import com.sauda.dto.lotmatch.LotMatchResponse;
 import com.sauda.dto.lotmatch.UpdateLotMatchStatusRequest;
 import com.sauda.service.LotMatchService;
 import java.math.BigDecimal;
@@ -127,5 +131,97 @@ class LotMatchControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("interested"))
                 .andExpect(jsonPath("$.distributorComment").value("Готовы участвовать"));
+    }
+
+    @Test
+    void createMatchReturnsCreated() throws Exception {
+        UUID lotId = UUID.randomUUID();
+        UUID offerId = UUID.randomUUID();
+        UUID matchId = UUID.randomUUID();
+
+        when(lotMatchService.createMatch(any(CreateLotMatchRequest.class)))
+                .thenReturn(
+                        sampleLotMatchResponse(matchId, lotId, offerId, LotMatchStatus.suggested));
+
+        mockMvc.perform(
+                        post("/api/v1/lot-matches")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
+                                        {
+                                          "lotId":"%s",
+                                          "offerId":"%s",
+                                          "matchReason":"Model match"
+                                        }
+                                        """
+                                                .formatted(lotId, offerId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(matchId.toString()));
+    }
+
+    @Test
+    void listMatchesByLotReturnsPage() throws Exception {
+        UUID lotId = UUID.randomUUID();
+        UUID matchId = UUID.randomUUID();
+
+        when(lotMatchService.listByLot(eq(lotId), any()))
+                .thenReturn(
+                        new PageImpl<>(
+                                List.of(
+                                        sampleLotMatchResponse(
+                                                matchId,
+                                                lotId,
+                                                UUID.randomUUID(),
+                                                LotMatchStatus.suggested))));
+
+        mockMvc.perform(get("/api/v1/lot-matches").param("lotId", lotId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].lotId").value(lotId.toString()));
+    }
+
+    @Test
+    void getMatchReturnsResponse() throws Exception {
+        UUID matchId = UUID.randomUUID();
+
+        when(lotMatchService.getMatch(matchId))
+                .thenReturn(
+                        sampleLotMatchResponse(
+                                matchId,
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                LotMatchStatus.matched));
+
+        mockMvc.perform(get("/api/v1/lot-matches/{matchId}", matchId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("matched"));
+    }
+
+    private static LotMatchResponse sampleLotMatchResponse(
+            UUID matchId, UUID lotId, UUID offerId, LotMatchStatus status) {
+        return new LotMatchResponse(
+                matchId,
+                lotId,
+                offerId,
+                UUID.randomUUID(),
+                status,
+                null,
+                "reason",
+                List.of(),
+                List.of(),
+                List.of(),
+                10,
+                15,
+                CheckResult.unknown,
+                CheckResult.unknown,
+                CheckResult.unknown,
+                null,
+                null,
+                null,
+                null,
+                true,
+                "",
+                null,
+                null,
+                null);
     }
 }

@@ -36,4 +36,41 @@ class LotMatchCalculatorTest {
         assertThat(match.getStockCheck()).isEqualTo(CheckResult.ok);
         assertThat(match.getPriceCheck()).isEqualTo(CheckResult.ok);
     }
+
+    @Test
+    void applyDerivedFieldsMarksFailuresWhenInsufficientStockAndOverBudget() {
+        Lot lot = new Lot();
+        lot.setQuantity(20);
+        lot.setBudgetAmount(new BigDecimal("50000"));
+
+        Offer offer = new Offer();
+        offer.setPrice(new BigDecimal("8000"));
+        offer.setStockQty(5);
+        offer.setStockStatus(StockStatus.out_of_stock);
+
+        LotMatch match = new LotMatch();
+        calculator.applyDerivedFields(match, lot, offer);
+
+        assertThat(match.getQuantityCheck()).isEqualTo(CheckResult.fail);
+        assertThat(match.getStockCheck()).isEqualTo(CheckResult.fail);
+        assertThat(match.getPriceCheck()).isEqualTo(CheckResult.fail);
+    }
+
+    @Test
+    void applyDerivedFieldsLeavesPriceUnknownWhenOfferHasNoPrice() {
+        Lot lot = new Lot();
+        lot.setQuantity(10);
+        lot.setBudgetAmount(new BigDecimal("100000"));
+
+        Offer offer = new Offer();
+        offer.setStockQty(15);
+        offer.setStockStatus(StockStatus.unknown);
+
+        LotMatch match = new LotMatch();
+        calculator.applyDerivedFields(match, lot, offer);
+
+        assertThat(match.getEstimatedUnitPrice()).isNull();
+        assertThat(match.getPriceCheck()).isEqualTo(CheckResult.unknown);
+        assertThat(match.getQuantityCheck()).isEqualTo(CheckResult.ok);
+    }
 }
