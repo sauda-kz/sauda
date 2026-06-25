@@ -40,6 +40,24 @@ pull_with_retry() {
     return 1
 }
 
+sync_repo_config() {
+    if [[ ! -d "$DEPLOY_DIR/.git" ]]; then
+        echo "Deploy dir is not a git repo — skipping config sync (nginx/compose stay as on disk)." >&2
+        return 0
+    fi
+
+    local ref="${DEPLOY_GIT_REF:-}"
+    echo "Syncing repo config (nginx, compose) from origin${ref:+ ref=$ref}..."
+    git -C "$DEPLOY_DIR" fetch --prune origin
+
+    if [[ -n "$ref" ]]; then
+        git -C "$DEPLOY_DIR" checkout "$ref"
+        git -C "$DEPLOY_DIR" pull --ff-only origin "$ref"
+    else
+        git -C "$DEPLOY_DIR" pull --ff-only
+    fi
+}
+
 load_transferred_images() {
     if [[ ! -d "$IMAGE_DIR" ]]; then
         echo "Image directory not found: $IMAGE_DIR" >&2
@@ -69,6 +87,8 @@ main() {
 
     cd "$DEPLOY_DIR"
 
+    sync_repo_config
+
     case "$SAUDA_DEPLOY_MODE" in
         transfer)
             echo "Deploy mode: transfer (images loaded from $IMAGE_DIR)"
@@ -91,6 +111,10 @@ main() {
     echo "Restarting stack..."
     $compose down --remove-orphans
     $compose up -d --no-build
+
+    echo "Recreating edge nginx..."
+    $compose up -d --no-deps --force-recreate nginx
+    $compose exec -T nginx nginx -t
 
     echo "Deploy complete."
     $compose ps
