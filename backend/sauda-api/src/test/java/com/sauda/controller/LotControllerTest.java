@@ -12,28 +12,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.sauda.domain.enums.LotStatus;
 import com.sauda.dto.lot.LotResponse;
+import com.sauda.repository.AppUserRepository;
 import com.sauda.service.LotService;
 import com.sauda.testsupport.LotTestFixtures;
+import com.sauda.testsupport.WebMvcSecurityTestConfig;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(LotController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import(WebMvcSecurityTestConfig.class)
 class LotControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private LotService lotService;
+    @MockitoBean private AppUserRepository appUserRepository;
 
     @Test
+    @WithMockUser(authorities = "lot:read")
     void listLotsReturnsPage() throws Exception {
         UUID lotId = UUID.randomUUID();
         when(lotService.listLots(eq(null), any()))
@@ -76,6 +85,7 @@ class LotControllerTest {
     }
 
     @Test
+    @WithMockUser(authorities = "lot:create")
     void createLotReturnsCreated() throws Exception {
         when(lotService.createLot(any())).thenReturn(sampleLotResponse(UUID.randomUUID()));
 
@@ -88,6 +98,7 @@ class LotControllerTest {
     }
 
     @Test
+    @WithMockUser(authorities = "lot:manage")
     void updateLotReturnsOk() throws Exception {
         UUID lotId = UUID.randomUUID();
         when(lotService.updateLot(eq(lotId), any())).thenReturn(sampleLotResponse(lotId));
@@ -101,6 +112,7 @@ class LotControllerTest {
     }
 
     @Test
+    @WithMockUser(authorities = "lot:manage")
     void archiveLotReturnsArchivedStatus() throws Exception {
         UUID lotId = UUID.randomUUID();
         when(lotService.archiveLot(lotId))

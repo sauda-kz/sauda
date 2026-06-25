@@ -1,7 +1,7 @@
 package com.sauda.controller;
 
 import com.sauda.common.ApiConstants;
-import com.sauda.dto.HealthResponse;
+import com.sauda.dto.health.HealthResponse;
 import com.sauda.service.HealthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

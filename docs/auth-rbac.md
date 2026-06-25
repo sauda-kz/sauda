@@ -6,7 +6,7 @@
 JPA: `com.sauda.domain.entity.{Role, Permission, AppUser}`  
 Коды ролей в Java: `com.sauda.domain.enums.RoleCode`
 
-> Spring Security пока **не подключён** — см. [architecture.md](architecture.md).  
+> Spring Security подключён — см. раздел «Реализовано (SAUDA-005)» ниже.  
 > Схема и seed-данные готовы, чтобы при включении Security проверять `permission.code` через `@PreAuthorize`.
 
 ---
@@ -226,6 +226,61 @@ Login → загрузить AppUser + roles + permissions
 2. `UserDetailsService` с join `app_user → app_user_role → app_role → role_permission → permission`
 3. Method security по `permission.code`
 4. Tenant filter в сервисах (distributor видит только свои `offer`)
+
+---
+
+## Реализовано (SAUDA-005)
+
+Spring Security + JWT подключены в `backend/sauda-api`.
+
+### API
+
+| Метод | Путь | Доступ |
+|-------|------|--------|
+| POST | `/api/v1/auth/login` | public |
+| POST | `/api/v1/auth/refresh` | public |
+| GET | `/api/v1/auth/me` | authenticated |
+| GET | `/api/v1/organizations/current` | `org:read` |
+
+### Dev-пользователи (миграция `V4__auth_demo_users.sql`)
+
+Пароль для всех: `Sauda123!`
+
+| Email | Роль | Организация |
+|-------|------|-------------|
+| `admin@sauda.kz` | `platform_admin` | Sauda Platform |
+| `buyer-a@shop.kz` | `buyer` | Buyer Shop A |
+| `buyer-b@shop.kz` | `buyer` | Buyer Shop B |
+
+### Ручная проверка (curl)
+
+```bash
+# Login buyer A
+curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"buyer-a@shop.kz","password":"Sauda123!"}'
+
+# Me (подставить accessToken из ответа)
+curl -s http://localhost:8080/api/v1/auth/me \
+  -H "Authorization: Bearer <accessToken>"
+
+# Текущая организация (tenant)
+curl -s http://localhost:8080/api/v1/organizations/current \
+  -H "Authorization: Bearer <accessToken>"
+
+# Lots без токена → 401; buyer без lot:read → 403; platform_admin → 200
+curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/lots
+```
+
+### Конфигурация
+
+```yaml
+sauda:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: 3600000        # access token, 1 час
+    refresh-expiration-ms: 604800000  # refresh token, 7 дней
+```
 
 ---
 

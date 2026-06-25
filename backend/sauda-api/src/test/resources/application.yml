@@ -11,6 +11,12 @@ spring:
   flyway:
     enabled: false
 
+sauda:
+  jwt:
+    secret: test-jwt-secret-key-min-32-chars!!
+    expiration-ms: 3600000
+    refresh-expiration-ms: 604800000
+
 logging:
   level:
     root: WARN

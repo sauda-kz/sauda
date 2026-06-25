@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,6 +35,7 @@ public class LotController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('lot:read')")
     public Page<LotResponse> listLots(
             @RequestParam(required = false) LotStatus status,
             @PageableDefault(size = 20) Pageable pageable) {
@@ -41,22 +43,26 @@ public class LotController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('lot:read')")
     public LotResponse getLot(@PathVariable UUID id) {
         return lotService.getLot(id);
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('lot:create')")
     public ResponseEntity<LotResponse> createLot(@Valid @RequestBody CreateLotRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(lotService.createLot(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('lot:manage')")
     public LotResponse updateLot(
             @PathVariable UUID id, @Valid @RequestBody UpdateLotRequest request) {
         return lotService.updateLot(id, request);
     }
 
     @PatchMapping("/{id}/archive")
+    @PreAuthorize("hasAuthority('lot:manage')")
     public LotResponse archiveLot(@PathVariable UUID id) {
         return lotService.archiveLot(id);
     }
