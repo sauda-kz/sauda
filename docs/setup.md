@@ -45,6 +45,14 @@ cd backend/sauda-api && ./mvnw spring-boot:run
 cd frontend/sauda-web && npm install && npm run dev
 ```
 
+**Запуск API из IntelliJ / Maven на хосте:** поднимите только Postgres и пробросьте порт на `localhost`:
+
+```bash
+docker compose up -d postgres
+```
+
+В `docker-compose.yml` для `postgres` опубликован порт `5432` (`DB_PUBLISH_PORT`). Профиль `dev` подключается к `localhost:5432` с учётками из `.env.example` (`sauda` / `sauda`, БД `sauda_dev`).
+
 ---
 
 ## 2. GitHub (минимум для MVP без сервера)

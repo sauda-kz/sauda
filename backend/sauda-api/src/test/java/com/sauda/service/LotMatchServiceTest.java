@@ -42,6 +42,7 @@ class LotMatchServiceTest {
     @Mock private LotService lotService;
     @Mock private OfferRepository offerRepository;
     @Mock private OrganizationRepository organizationRepository;
+    @Mock private TenantAccessService tenantAccessService;
 
     private final LotMatchMapper lotMatchMapper = Mappers.getMapper(LotMatchMapper.class);
     private final LotMatchCalculator lotMatchCalculator = new LotMatchCalculator();
@@ -63,7 +64,8 @@ class LotMatchServiceTest {
                         offerRepository,
                         organizationRepository,
                         lotMatchMapper,
-                        lotMatchCalculator);
+                        lotMatchCalculator,
+                        tenantAccessService);
 
         lotId = UUID.randomUUID();
         offerId = UUID.randomUUID();
@@ -198,6 +200,7 @@ class LotMatchServiceTest {
 
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
+        when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
         when(lotMatchRepository.findByDistributorIdAndMatchStatusOrderByCreatedAtDesc(
                         eq(distributorId), eq(LotMatchStatus.suggested), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(match)));
@@ -217,6 +220,7 @@ class LotMatchServiceTest {
 
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
+        when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
         when(lotMatchRepository.findByIdAndDistributorId(matchId, distributorId))
                 .thenReturn(Optional.of(match));
         when(lotMatchRepository.save(match)).thenReturn(match);
@@ -237,6 +241,7 @@ class LotMatchServiceTest {
         UUID matchId = UUID.randomUUID();
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
+        when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
 
         assertThatThrownBy(
                         () ->
@@ -254,6 +259,7 @@ class LotMatchServiceTest {
         UUID matchId = UUID.randomUUID();
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
+        when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
         when(lotMatchRepository.findByIdAndDistributorId(matchId, distributorId))
                 .thenReturn(Optional.empty());
 
@@ -265,6 +271,7 @@ class LotMatchServiceTest {
     void getForDistributorThrowsWhenOrgIsNotDistributor() {
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(false);
+        when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
 
         assertThatThrownBy(
                         () -> lotMatchService.getForDistributor(distributorId, UUID.randomUUID()))

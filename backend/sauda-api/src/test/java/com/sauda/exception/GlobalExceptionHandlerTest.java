@@ -2,7 +2,7 @@ package com.sauda.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sauda.dto.ApiErrorResponse;
+import com.sauda.dto.common.ApiErrorResponse;
 import com.sauda.dto.lot.CreateLotRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
@@ -101,5 +101,27 @@ class GlobalExceptionHandlerTest {
         ApiErrorResponse body = response.getBody();
         assertThat(body).isNotNull();
         assertThat(body.message()).isEqualTo("An unexpected error occurred");
+    }
+
+    @Test
+    void handleSaudaUnauthorizedExceptionReturnsUnauthorized() {
+        var response =
+                handler.handleSaudaUnauthorizedException(
+                        new SaudaUnauthorizedException("Invalid token"), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Invalid token");
+    }
+
+    @Test
+    void handleSaudaForbiddenExceptionReturnsForbidden() {
+        var response =
+                handler.handleForbiddenException(
+                        new SaudaForbiddenException("Access denied"), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().message()).isEqualTo("Access denied");
     }
 }

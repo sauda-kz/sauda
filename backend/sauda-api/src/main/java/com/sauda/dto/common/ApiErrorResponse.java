@@ -1,4 +1,4 @@
-package com.sauda.dto;
+package com.sauda.dto.common;
 
 import java.time.Instant;
 

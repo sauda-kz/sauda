@@ -15,26 +15,35 @@ import com.sauda.dto.lotmatch.CreateLotMatchRequest;
 import com.sauda.dto.lotmatch.DistributorLotMatchCardResponse;
 import com.sauda.dto.lotmatch.LotMatchResponse;
 import com.sauda.dto.lotmatch.UpdateLotMatchStatusRequest;
+import com.sauda.repository.AppUserRepository;
 import com.sauda.service.LotMatchService;
+import com.sauda.testsupport.WebMvcSecurityTestConfig;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(LotMatchController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import(WebMvcSecurityTestConfig.class)
 class LotMatchControllerTest {
 
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private LotMatchService lotMatchService;
+    @MockitoBean private AppUserRepository appUserRepository;
 
     @Test
+    @WithMockUser(authorities = "lot_match:read")
     void listForDistributorReturnsCard() throws Exception {
         UUID distributorId = UUID.randomUUID();
         UUID matchId = UUID.randomUUID();
@@ -81,6 +90,7 @@ class LotMatchControllerTest {
     }
 
     @Test
+    @WithMockUser(authorities = "lot_match:review")
     void updateStatusForDistributorReturnsUpdatedCard() throws Exception {
         UUID distributorId = UUID.randomUUID();
         UUID matchId = UUID.randomUUID();
@@ -134,6 +144,7 @@ class LotMatchControllerTest {
     }
 
     @Test
+    @WithMockUser(authorities = "lot_match:manage")
     void createMatchReturnsCreated() throws Exception {
         UUID lotId = UUID.randomUUID();
         UUID offerId = UUID.randomUUID();
@@ -160,6 +171,7 @@ class LotMatchControllerTest {
     }
 
     @Test
+    @WithMockUser(authorities = "lot_match:read")
     void listMatchesByLotReturnsPage() throws Exception {
         UUID lotId = UUID.randomUUID();
         UUID matchId = UUID.randomUUID();
@@ -180,6 +192,7 @@ class LotMatchControllerTest {
     }
 
     @Test
+    @WithMockUser(authorities = "lot_match:read")
     void getMatchReturnsResponse() throws Exception {
         UUID matchId = UUID.randomUUID();
 

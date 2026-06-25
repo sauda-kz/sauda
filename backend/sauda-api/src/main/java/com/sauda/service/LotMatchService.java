@@ -40,6 +40,7 @@ public class LotMatchService {
     private final OrganizationRepository organizationRepository;
     private final LotMatchMapper lotMatchMapper;
     private final LotMatchCalculator lotMatchCalculator;
+    private final TenantAccessService tenantAccessService;
 
     public LotMatchService(
             LotMatchRepository lotMatchRepository,
@@ -47,13 +48,15 @@ public class LotMatchService {
             OfferRepository offerRepository,
             OrganizationRepository organizationRepository,
             LotMatchMapper lotMatchMapper,
-            LotMatchCalculator lotMatchCalculator) {
+            LotMatchCalculator lotMatchCalculator,
+            TenantAccessService tenantAccessService) {
         this.lotMatchRepository = lotMatchRepository;
         this.lotService = lotService;
         this.offerRepository = offerRepository;
         this.organizationRepository = organizationRepository;
         this.lotMatchMapper = lotMatchMapper;
         this.lotMatchCalculator = lotMatchCalculator;
+        this.tenantAccessService = tenantAccessService;
     }
 
     @Transactional
@@ -110,32 +113,35 @@ public class LotMatchService {
     @Transactional(readOnly = true)
     public Page<DistributorLotMatchCardResponse> listForDistributor(
             UUID distributorId, LotMatchStatus status, Pageable pageable) {
-        assertDistributorOrg(distributorId);
+        UUID resolvedDistributorId = tenantAccessService.resolveDistributorId(distributorId);
+        assertDistributorOrg(resolvedDistributorId);
         Page<LotMatch> page =
                 status != null
                         ? lotMatchRepository.findByDistributorIdAndMatchStatusOrderByCreatedAtDesc(
-                                distributorId, status, pageable)
+                                resolvedDistributorId, status, pageable)
                         : lotMatchRepository.findByDistributorIdOrderByCreatedAtDesc(
-                                distributorId, pageable);
+                                resolvedDistributorId, pageable);
         return page.map(lotMatchMapper::toDistributorCard);
     }
 
     @Transactional(readOnly = true)
     public DistributorLotMatchCardResponse getForDistributor(UUID distributorId, UUID matchId) {
-        assertDistributorOrg(distributorId);
-        LotMatch match = findMatchForDistributorOrThrow(matchId, distributorId);
+        UUID resolvedDistributorId = tenantAccessService.resolveDistributorId(distributorId);
+        assertDistributorOrg(resolvedDistributorId);
+        LotMatch match = findMatchForDistributorOrThrow(matchId, resolvedDistributorId);
         return lotMatchMapper.toDistributorCard(match);
     }
 
     @Transactional
     public DistributorLotMatchCardResponse updateStatusForDistributor(
             UUID distributorId, UUID matchId, UpdateLotMatchStatusRequest request) {
-        assertDistributorOrg(distributorId);
+        UUID resolvedDistributorId = tenantAccessService.resolveDistributorId(distributorId);
+        assertDistributorOrg(resolvedDistributorId);
         if (!DISTRIBUTOR_ALLOWED_STATUSES.contains(request.status())) {
             throw new SaudaException("Status not allowed for distributor: " + request.status());
         }
 
-        LotMatch match = findMatchForDistributorOrThrow(matchId, distributorId);
+        LotMatch match = findMatchForDistributorOrThrow(matchId, resolvedDistributorId);
         match.setMatchStatus(request.status());
         if (request.distributorComment() != null) {
             match.setDistributorComment(request.distributorComment());
