@@ -40,6 +40,24 @@ pull_with_retry() {
     return 1
 }
 
+sync_repo_config() {
+    if [[ ! -d "$DEPLOY_DIR/.git" ]]; then
+        echo "Deploy dir is not a git repo — skipping config sync (nginx/compose stay as on disk)." >&2
+        return 0
+    fi
+
+    local ref="${DEPLOY_GIT_REF:-}"
+    echo "Syncing repo config (nginx, compose) from origin${ref:+ ref=$ref}..."
+    git -C "$DEPLOY_DIR" fetch --prune origin
+
+    if [[ -n "$ref" ]]; then
+        git -C "$DEPLOY_DIR" checkout "$ref"
+        git -C "$DEPLOY_DIR" pull --ff-only origin "$ref"
+    else
+        git -C "$DEPLOY_DIR" pull --ff-only
+    fi
+}
+
 load_transferred_images() {
     if [[ ! -d "$IMAGE_DIR" ]]; then
         echo "Image directory not found: $IMAGE_DIR" >&2
@@ -69,6 +87,8 @@ main() {
 
     cd "$DEPLOY_DIR"
 
+    sync_repo_config
+
     case "$SAUDA_DEPLOY_MODE" in
         transfer)
             echo "Deploy mode: transfer (images loaded from $IMAGE_DIR)"
@@ -91,6 +111,19 @@ main() {
     echo "Restarting stack..."
     $compose down --remove-orphans
     $compose up -d --no-build
+
+    # Bind-mounted nginx.conf is read only at container start — recreate edge nginx
+    # so /swagger-ui.html and /v3/api-docs routes apply after git pull.
+    echo "Recreating edge nginx..."
+    $compose up -d --no-deps --force-recreate nginx
+    $compose exec -T nginx nginx -t
+
+    if $compose exec -T nginx wget -qO- http://127.0.0.1/swagger-ui.html 2>/dev/null | grep -q 'vite.svg'; then
+        echo "::warning::/swagger-ui.html is still routed to the frontend SPA." >&2
+        echo "Check: docker compose ps, NGINX_HTTP_PORT in .env, host nginx on :80." >&2
+    else
+        echo "Swagger UI routing: OK"
+    fi
 
     echo "Deploy complete."
     $compose ps
