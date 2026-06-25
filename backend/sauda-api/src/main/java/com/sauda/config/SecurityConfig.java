@@ -48,7 +48,10 @@ public class SecurityConfig {
                                                 HttpMethod.POST,
                                                 ApiConstants.API_V1 + "/auth/refresh")
                                         .permitAll()
-                                        .requestMatchers("/actuator/health", "/actuator/info")
+                                        .requestMatchers(
+                                                "/actuator/health",
+                                                "/actuator/health/**",
+                                                "/actuator/info")
                                         .permitAll()
                                         .anyRequest()
                                         .authenticated())
