@@ -112,18 +112,9 @@ main() {
     $compose down --remove-orphans
     $compose up -d --no-build
 
-    # Bind-mounted nginx.conf is read only at container start — recreate edge nginx
-    # so /swagger-ui.html and /v3/api-docs routes apply after git pull.
     echo "Recreating edge nginx..."
     $compose up -d --no-deps --force-recreate nginx
     $compose exec -T nginx nginx -t
-
-    if $compose exec -T nginx wget -qO- http://127.0.0.1/swagger-ui.html 2>/dev/null | grep -q 'vite.svg'; then
-        echo "::warning::/swagger-ui.html is still routed to the frontend SPA." >&2
-        echo "Check: docker compose ps, NGINX_HTTP_PORT in .env, host nginx on :80." >&2
-    else
-        echo "Swagger UI routing: OK"
-    fi
 
     echo "Deploy complete."
     $compose ps
