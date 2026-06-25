@@ -6,6 +6,9 @@ import com.sauda.dto.lot.CreateLotRequest;
 import com.sauda.dto.lot.LotResponse;
 import com.sauda.dto.lot.UpdateLotRequest;
 import com.sauda.service.LotService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -25,6 +28,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@Tag(name = "Lots", description = "Lot management")
+@SecurityRequirement(name = "bearerAuth")
 @RequestMapping(ApiConstants.API_V1 + "/lots")
 public class LotController {
 
@@ -34,6 +39,7 @@ public class LotController {
         this.lotService = lotService;
     }
 
+    @Operation(summary = "List lots with optional status filter")
     @GetMapping
     @PreAuthorize("hasAuthority('lot:read')")
     public Page<LotResponse> listLots(
@@ -42,18 +48,21 @@ public class LotController {
         return lotService.listLots(status, pageable);
     }
 
+    @Operation(summary = "Get lot by ID")
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('lot:read')")
     public LotResponse getLot(@PathVariable UUID id) {
         return lotService.getLot(id);
     }
 
+    @Operation(summary = "Create a new lot")
     @PostMapping
     @PreAuthorize("hasAuthority('lot:create')")
     public ResponseEntity<LotResponse> createLot(@Valid @RequestBody CreateLotRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(lotService.createLot(request));
     }
 
+    @Operation(summary = "Update lot")
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('lot:manage')")
     public LotResponse updateLot(
@@ -61,6 +70,7 @@ public class LotController {
         return lotService.updateLot(id, request);
     }
 
+    @Operation(summary = "Archive lot")
     @PatchMapping("/{id}/archive")
     @PreAuthorize("hasAuthority('lot:manage')")
     public LotResponse archiveLot(@PathVariable UUID id) {

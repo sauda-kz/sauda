@@ -53,6 +53,11 @@ public class SecurityConfig {
                                                 "/actuator/health/**",
                                                 "/actuator/info")
                                         .permitAll()
+                                        .requestMatchers(
+                                                "/swagger-ui.html",
+                                                "/swagger-ui/**",
+                                                "/v3/api-docs/**")
+                                        .permitAll()
                                         .anyRequest()
                                         .authenticated())
                 .exceptionHandling(
