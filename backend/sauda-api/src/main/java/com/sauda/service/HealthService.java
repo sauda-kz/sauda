@@ -1,6 +1,6 @@
 package com.sauda.service;
 
-import com.sauda.dto.HealthResponse;
+import com.sauda.dto.health.HealthResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 

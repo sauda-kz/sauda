@@ -6,7 +6,7 @@
 > **обязательно обновите Mermaid-блок ниже** в том же PR.
 >
 > Источник правды: `backend/sauda-api/src/main/resources/db/migration/`  
-> Последняя миграция на момент обновления: **V2__init.sql**
+> Последняя миграция на момент обновления: **V3__lot_mvp_structure.sql**
 
 ## Как обновлять
 
@@ -15,7 +15,7 @@
 3. Обновите строку «Последняя миграция» в шапке.
 4. Проверьте рендер на [mermaid.live](https://mermaid.live).
 
-Связанные документы: [auth-rbac.md](auth-rbac.md) (роли и permissions), [architecture.md](architecture.md).
+Связанные документы: [auth-rbac.md](auth-rbac.md) (роли и permissions), [architecture.md](architecture.md), [lot-mvp-structure.md](lot-mvp-structure.md) (поля lot / lot_match для MVP).
 
 ---
 
@@ -177,22 +177,34 @@ erDiagram
     lot {
         uuid id PK
         text source
+        text external_purchase_id
         text external_lot_id
         text title
         text customer_name
         text category
         text description
-        text requirements_text
+        text procurement_method
+        text lot_type
         integer quantity
+        text unit
         numeric budget_amount
         char currency
-        timestamptz deadline_at
+        text delivery_location
+        timestamptz delivery_deadline
+        timestamptz submission_deadline
+        text warranty_requirements
+        text technical_requirements
+        text required_documents
+        text qualification_requirements
+        text contract_terms_summary
         timestamptz published_at
         lot_status status
         text source_url
+        text raw_text
         jsonb raw_data
         uuid created_by FK
         timestamptz created_at
+        timestamptz updated_at
     }
 
     lot_match {
@@ -203,11 +215,21 @@ erDiagram
         lot_match_status match_status
         numeric confidence_score
         text match_reason
+        jsonb matched_requirements
+        jsonb missing_requirements
+        jsonb risk_flags
+        integer required_quantity
+        integer available_quantity
         check_result quantity_check
         check_result stock_check
         check_result price_check
+        numeric estimated_unit_price
+        numeric estimated_total_price
+        numeric budget_amount
         numeric estimated_margin
         boolean needs_manual_review
+        text admin_comment
+        text distributor_comment
         timestamptz created_at
         timestamptz updated_at
     }
@@ -329,7 +351,7 @@ erDiagram
     app_user ||--o{ order_event : actor
 ```
 
-**PostgreSQL ENUM types** (не отдельные таблицы): `organization_type`, `vat_status`, `stock_status`, `lot_status`, `lot_match_status`, `check_result`, `cart_status`, `order_status`, `import_status`. Значения — в `V2__init.sql`.
+**PostgreSQL ENUM types** (не отдельные таблицы): `organization_type`, `vat_status`, `stock_status`, `lot_status`, `lot_match_status`, `check_result`, `cart_status`, `order_status`, `import_status`. Базовые значения — в `V2__init.sql`; расширения `lot_status` и `lot_match_status` — в `V3__lot_mvp_structure.sql`.
 
 **Ограничения Mermaid:** в атрибутах только `PK` / `FK` / `UK`; без стрелок `→` и без inline-комментариев в кавычках внутри `erDiagram` (ломают парсер). Детали колонок — в миграции.
 

@@ -9,6 +9,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-sauda}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PUBLISH_PORT:-5432}:5432"
     networks:
       - sauda-network
     healthcheck:

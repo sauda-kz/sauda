@@ -38,6 +38,9 @@ public class Lot {
 
     private String source;
 
+    @Column(name = "external_purchase_id")
+    private String externalPurchaseId;
+
     @Column(name = "external_lot_id")
     private String externalLotId;
 
@@ -50,10 +53,15 @@ public class Lot {
 
     private String description;
 
-    @Column(name = "requirements_text")
-    private String requirementsText;
+    @Column(name = "procurement_method")
+    private String procurementMethod;
+
+    @Column(name = "lot_type")
+    private String lotType;
 
     private Integer quantity;
+
+    private String unit;
 
     @Column(name = "budget_amount")
     private BigDecimal budgetAmount;
@@ -62,8 +70,29 @@ public class Lot {
     @Column(length = 3)
     private String currency = "KZT";
 
-    @Column(name = "deadline_at")
-    private Instant deadlineAt;
+    @Column(name = "delivery_location")
+    private String deliveryLocation;
+
+    @Column(name = "delivery_deadline")
+    private Instant deliveryDeadline;
+
+    @Column(name = "submission_deadline")
+    private Instant submissionDeadline;
+
+    @Column(name = "warranty_requirements")
+    private String warrantyRequirements;
+
+    @Column(name = "technical_requirements")
+    private String technicalRequirements;
+
+    @Column(name = "required_documents")
+    private String requiredDocuments;
+
+    @Column(name = "qualification_requirements")
+    private String qualificationRequirements;
+
+    @Column(name = "contract_terms_summary")
+    private String contractTermsSummary;
 
     @Column(name = "published_at")
     private Instant publishedAt;
@@ -76,6 +105,9 @@ public class Lot {
     @Column(name = "source_url")
     private String sourceUrl;
 
+    @Column(name = "raw_text")
+    private String rawText;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "raw_data", nullable = false, columnDefinition = "jsonb")
     private Map<String, Object> rawData = new HashMap<>();
@@ -86,4 +118,7 @@ public class Lot {
 
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
     private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false, insertable = false)
+    private Instant updatedAt;
 }
