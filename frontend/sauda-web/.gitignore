@@ -20,7 +20,10 @@ dist-ssr
 
 # Env
 .env
-.env.*
+.env.*.local
+!.env.example
+!.env.remote
+!.env.localdev
 
 # Test
 coverage
