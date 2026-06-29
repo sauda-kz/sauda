@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.sauda.domain.enums.CheckResult;
 import com.sauda.domain.enums.LotMatchStatus;
+import com.sauda.domain.enums.StockStatus;
 import com.sauda.dto.lotmatch.CreateLotMatchRequest;
 import com.sauda.dto.lotmatch.DistributorLotMatchCardResponse;
 import com.sauda.dto.lotmatch.LotMatchResponse;
@@ -71,6 +72,9 @@ class LotMatchControllerTest {
                                                 "Samsung",
                                                 "990 PRO",
                                                 120,
+                                                StockStatus.in_stock,
+                                                true,
+                                                120,
                                                 new BigDecimal("45000"),
                                                 new BigDecimal("4500000"),
                                                 new BigDecimal("-4000000"),
@@ -116,6 +120,9 @@ class LotMatchControllerTest {
                                 "Samsung 990 PRO 1TB",
                                 "Samsung",
                                 "990 PRO",
+                                120,
+                                StockStatus.in_stock,
+                                null,
                                 120,
                                 new BigDecimal("45000"),
                                 new BigDecimal("4500000"),

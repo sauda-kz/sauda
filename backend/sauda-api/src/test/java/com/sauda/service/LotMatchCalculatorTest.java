@@ -7,6 +7,7 @@ import com.sauda.domain.entity.LotMatch;
 import com.sauda.domain.entity.Offer;
 import com.sauda.domain.enums.CheckResult;
 import com.sauda.domain.enums.StockStatus;
+import com.sauda.domain.stock.StockTextMapper;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +23,7 @@ class LotMatchCalculatorTest {
 
         Offer offer = new Offer();
         offer.setPrice(new BigDecimal("8000"));
-        offer.setStockQty(15);
+        offer.setStockQuantity(15);
         offer.setStockStatus(StockStatus.in_stock);
 
         LotMatch match = new LotMatch();
@@ -45,7 +46,7 @@ class LotMatchCalculatorTest {
 
         Offer offer = new Offer();
         offer.setPrice(new BigDecimal("8000"));
-        offer.setStockQty(5);
+        offer.setStockQuantity(5);
         offer.setStockStatus(StockStatus.out_of_stock);
 
         LotMatch match = new LotMatch();
@@ -63,7 +64,7 @@ class LotMatchCalculatorTest {
         lot.setBudgetAmount(new BigDecimal("100000"));
 
         Offer offer = new Offer();
-        offer.setStockQty(15);
+        offer.setStockQuantity(15);
         offer.setStockStatus(StockStatus.unknown);
 
         LotMatch match = new LotMatch();
@@ -72,5 +73,62 @@ class LotMatchCalculatorTest {
         assertThat(match.getEstimatedUnitPrice()).isNull();
         assertThat(match.getPriceCheck()).isEqualTo(CheckResult.unknown);
         assertThat(match.getQuantityCheck()).isEqualTo(CheckResult.ok);
+    }
+
+    @Test
+    void applyDerivedFieldsOnOrderRequiresManualReviewAndSkipsQuantityOk() {
+        Lot lot = new Lot();
+        lot.setQuantity(10);
+        lot.setBudgetAmount(new BigDecimal("100000"));
+
+        Offer offer = new Offer();
+        offer.setPrice(new BigDecimal("8000"));
+        offer.setStockQuantity(50);
+        offer.setStockStatus(StockStatus.on_order);
+
+        LotMatch match = new LotMatch();
+        match.setNeedsManualReview(false);
+        boolean requiresReview = calculator.applyDerivedFields(match, lot, offer);
+
+        assertThat(requiresReview).isTrue();
+        assertThat(match.isNeedsManualReview()).isTrue();
+        assertThat(match.getQuantityCheck()).isEqualTo(CheckResult.unknown);
+        assertThat(match.getStockCheck()).isEqualTo(CheckResult.unknown);
+        assertThat(match.getRiskFlags()).contains(StockTextMapper.ON_ORDER_RISK_FLAG);
+    }
+
+    @Test
+    void applyDerivedFieldsLowStockMarksStockUnknownAndQuantityFailWhenInsufficient() {
+        Lot lot = new Lot();
+        lot.setQuantity(20);
+        lot.setBudgetAmount(new BigDecimal("100000"));
+
+        Offer offer = new Offer();
+        offer.setPrice(new BigDecimal("8000"));
+        offer.setStockQuantity(5);
+        offer.setStockStatus(StockStatus.low_stock);
+
+        LotMatch match = new LotMatch();
+        calculator.applyDerivedFields(match, lot, offer);
+
+        assertThat(match.getQuantityCheck()).isEqualTo(CheckResult.fail);
+        assertThat(match.getStockCheck()).isEqualTo(CheckResult.unknown);
+    }
+
+    @Test
+    void applyDerivedFieldsPreservesFractionalPriceWithoutRounding() {
+        Lot lot = new Lot();
+        lot.setQuantity(3);
+        lot.setBudgetAmount(new BigDecimal("10000"));
+
+        Offer offer = new Offer();
+        offer.setPrice(new BigDecimal("999.9"));
+        offer.setStockQuantity(10);
+        offer.setStockStatus(StockStatus.in_stock);
+
+        LotMatch match = new LotMatch();
+        calculator.applyDerivedFields(match, lot, offer);
+
+        assertThat(match.getEstimatedTotalPrice()).isEqualByComparingTo("2999.7");
     }
 }

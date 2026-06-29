@@ -95,7 +95,8 @@ public class LotMatchService {
                 request.needsManualReview() != null ? request.needsManualReview() : true);
         match.setAdminComment(request.adminComment() != null ? request.adminComment() : "");
 
-        lotMatchCalculator.applyDerivedFields(match, lot, offer);
+        boolean derivedRequiresReview = lotMatchCalculator.applyDerivedFields(match, lot, offer);
+        match.setNeedsManualReview(match.isNeedsManualReview() || derivedRequiresReview);
         return lotMatchMapper.toResponse(lotMatchRepository.save(match));
     }
 

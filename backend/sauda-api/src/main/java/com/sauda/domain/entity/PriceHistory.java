@@ -38,6 +38,7 @@ public class PriceHistory {
     @JoinColumn(name = "offer_id", nullable = false)
     private Offer offer;
 
+    @Column(precision = 18, scale = 2)
     private BigDecimal price;
 
     @JdbcTypeCode(SqlTypes.CHAR)

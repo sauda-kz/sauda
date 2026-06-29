@@ -156,8 +156,8 @@ erDiagram
         text model_mpn
         numeric price
         char currency
-        vat_status vat_status
-        integer stock_qty
+        boolean price_includes_vat
+        integer stock_quantity
         stock_status stock_status
         text lead_time
         timestamptz last_updated_at
@@ -351,7 +351,7 @@ erDiagram
     app_user ||--o{ order_event : actor
 ```
 
-**PostgreSQL ENUM types** (не отдельные таблицы): `organization_type`, `vat_status`, `stock_status`, `lot_status`, `lot_match_status`, `check_result`, `cart_status`, `order_status`, `import_status`. Базовые значения — в `V2__init.sql`; расширения `lot_status` и `lot_match_status` — в `V3__lot_mvp_structure.sql`.
+**PostgreSQL ENUM types** (не отдельные таблицы): `organization_type`, `stock_status`, `lot_status`, `lot_match_status`, `check_result`, `cart_status`, `order_status`, `import_status`. Базовые значения — в `V2__init.sql`; расширения `lot_status` и `lot_match_status` — в `V3__lot_mvp_structure.sql`; `low_stock` в `stock_status` — в `V5__phase0_money_vat_stock.sql`. НДС на offer: `price_includes_vat BOOLEAN` (не enum).
 
 **Ограничения Mermaid:** в атрибутах только `PK` / `FK` / `UK`; без стрелок `→` и без inline-комментариев в кавычках внутри `erDiagram` (ломают парсер). Детали колонок — в миграции.
 

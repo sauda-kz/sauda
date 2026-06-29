@@ -37,6 +37,6 @@ public class CartItem {
     @Column(nullable = false)
     private int qty;
 
-    @Column(name = "price_snapshot", nullable = false, precision = 14, scale = 2)
+    @Column(name = "price_snapshot", nullable = false, precision = 18, scale = 2)
     private BigDecimal priceSnapshot;
 }

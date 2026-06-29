@@ -75,7 +75,7 @@
 | `match_status` | да | ручное / логика | Статус матча (см. ниже) |
 | `match_reason` | да | ручное (admin) | Почему предложение подходит |
 | `required_quantity` | да | авто | Из `lot.quantity` |
-| `available_quantity` | да | авто | Из `offer.stock_qty` (0 если null) |
+| `available_quantity` | да | авто | Из `offer.stock_quantity` (0 если null) |
 | `needs_manual_review` | да | ручное / default `true` | Нужна ручная проверка |
 | `admin_comment` | да | ручное (default `''`) | Комментарий админа |
 | `distributor_comment` | нет | ручное (дистрибьютор) | Комментарий дистрибьютора |

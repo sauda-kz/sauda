@@ -1,6 +1,7 @@
 package com.sauda.dto.lotmatch;
 
 import com.sauda.domain.enums.LotMatchStatus;
+import com.sauda.domain.enums.StockStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -24,6 +25,9 @@ public record DistributorLotMatchCardResponse(
         String offerName,
         String brand,
         String modelMpn,
+        Integer stockQuantity,
+        StockStatus stockStatus,
+        Boolean priceIncludesVat,
         int availableQuantity,
         BigDecimal estimatedUnitPrice,
         BigDecimal estimatedTotalPrice,
