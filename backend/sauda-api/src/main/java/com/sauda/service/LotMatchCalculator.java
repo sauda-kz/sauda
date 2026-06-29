@@ -16,8 +16,7 @@ public class LotMatchCalculator {
 
     public boolean applyDerivedFields(LotMatch match, Lot lot, Offer offer) {
         int requiredQuantity = lot.getQuantity() != null ? lot.getQuantity() : 0;
-        int availableQuantity =
-                offer.getStockQuantity() != null ? offer.getStockQuantity() : 0;
+        int availableQuantity = offer.getStockQuantity() != null ? offer.getStockQuantity() : 0;
         match.setRequiredQuantity(requiredQuantity);
         match.setAvailableQuantity(availableQuantity);
         match.setBudgetAmount(lot.getBudgetAmount());
