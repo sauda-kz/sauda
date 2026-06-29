@@ -1,0 +1,45 @@
+# Compiled output
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+backend/sauda-api/target/
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Docker
+postgres_data/
+
+# OS
+Thumbs.db
+
+# Test reports
+backend/sauda-api/target/
+frontend/sauda-web/.vitest/

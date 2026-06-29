@@ -1,0 +1,125 @@
+name: Deploy PROD
+
+# PROD деплоится только вручную. Push в main НЕ запускает деплой.
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Git ref для деплоя (обычно main)
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/sauda-api
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/sauda-web
+  IMAGE_TAG: prod-latest
+
+jobs:
+  deploy-skipped:
+    name: Deploy disabled (MVP)
+    if: vars.DEPLOY_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print notice
+        run: |
+          echo "PROD deploy is disabled for MVP."
+          echo "See docs/setup.md for details."
+
+  deploy-prod:
+    name: Deploy to PROD
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/Dockerfile.backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infrastructure/docker/Dockerfile.frontend
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+            ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          build-args: |
+            VITE_API_URL=/api
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Export images for server transfer
+        if: vars.DEPLOY_PULL_FROM_GHCR != 'true'
+        run: |
+          docker pull ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          docker pull ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          mkdir -p deploy-artifacts
+          docker save ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }} | gzip -1 > deploy-artifacts/backend.tar.gz
+          docker save ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }} | gzip -1 > deploy-artifacts/frontend.tar.gz
+          ls -lh deploy-artifacts/
+
+      - name: Copy images to server
+        if: vars.DEPLOY_PULL_FROM_GHCR != 'true'
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: deploy-artifacts/*.tar.gz
+          target: /tmp/sauda-deploy
+          strip_components: 1
+
+      - name: Deploy to PROD server
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          BACKEND_IMAGE: ${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          FRONTEND_IMAGE: ${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}
+          SPRING_PROFILES_ACTIVE: prod
+          DEPLOY_GIT_REF: ${{ inputs.git_ref }}
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: BACKEND_IMAGE,FRONTEND_IMAGE,SPRING_PROFILES_ACTIVE,DEPLOY_GIT_REF,GHCR_USERNAME,GHCR_TOKEN
+          script: |
+            set -euo pipefail
+            if [[ "${{ vars.DEPLOY_PULL_FROM_GHCR }}" == "true" ]]; then
+              export SAUDA_DEPLOY_MODE=pull
+            else
+              export SAUDA_DEPLOY_MODE=transfer
+              export IMAGE_DIR=/tmp/sauda-deploy
+            fi
+            bash /opt/sauda/infrastructure/deploy/remote-deploy.sh
