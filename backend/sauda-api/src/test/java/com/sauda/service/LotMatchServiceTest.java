@@ -86,7 +86,7 @@ class LotMatchServiceTest {
         offer.setDistributor(distributor);
         offer.setRawName("Samsung 990 PRO");
         offer.setPrice(new BigDecimal("8000"));
-        offer.setStockQty(15);
+        offer.setStockQuantity(15);
     }
 
     @Test

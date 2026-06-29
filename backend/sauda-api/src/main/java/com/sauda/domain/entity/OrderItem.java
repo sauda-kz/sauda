@@ -41,7 +41,7 @@ public class OrderItem {
     @Column(nullable = false)
     private int qty;
 
-    @Column(name = "unit_price_snapshot", nullable = false, precision = 14, scale = 2)
+    @Column(name = "unit_price_snapshot", nullable = false, precision = 18, scale = 2)
     private BigDecimal unitPriceSnapshot;
 
     @Column(name = "vat_rate", precision = 5, scale = 2)

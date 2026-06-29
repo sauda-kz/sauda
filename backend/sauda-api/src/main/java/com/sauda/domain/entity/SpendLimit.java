@@ -40,6 +40,6 @@ public class SpendLimit {
 
     private String period;
 
-    @Column(nullable = false, precision = 14, scale = 2)
+    @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal amount;
 }

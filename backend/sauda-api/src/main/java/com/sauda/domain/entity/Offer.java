@@ -1,7 +1,6 @@
 package com.sauda.domain.entity;
 
 import com.sauda.domain.enums.StockStatus;
-import com.sauda.domain.enums.VatStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -54,19 +53,18 @@ public class Offer {
     @Column(name = "model_mpn")
     private String modelMpn;
 
+    @Column(precision = 18, scale = 2)
     private BigDecimal price;
 
     @JdbcTypeCode(SqlTypes.CHAR)
     @Column(nullable = false, length = 3)
     private String currency = "KZT";
 
-    @Enumerated(EnumType.STRING)
-    @JdbcType(PostgreSQLEnumJdbcType.class)
-    @Column(name = "vat_status", nullable = false, columnDefinition = "vat_status")
-    private VatStatus vatStatus = VatStatus.unknown;
+    @Column(name = "price_includes_vat")
+    private Boolean priceIncludesVat;
 
-    @Column(name = "stock_qty")
-    private Integer stockQty;
+    @Column(name = "stock_quantity")
+    private Integer stockQuantity;
 
     @Enumerated(EnumType.STRING)
     @JdbcType(PostgreSQLEnumJdbcType.class)

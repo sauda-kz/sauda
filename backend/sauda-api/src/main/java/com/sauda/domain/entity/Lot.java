@@ -63,7 +63,7 @@ public class Lot {
 
     private String unit;
 
-    @Column(name = "budget_amount")
+    @Column(name = "budget_amount", precision = 18, scale = 2)
     private BigDecimal budgetAmount;
 
     @JdbcTypeCode(SqlTypes.CHAR)

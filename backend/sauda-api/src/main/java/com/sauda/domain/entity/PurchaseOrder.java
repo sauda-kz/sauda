@@ -49,10 +49,10 @@ public class PurchaseOrder {
     @Column(nullable = false, columnDefinition = "order_status")
     private OrderStatus status = OrderStatus.draft;
 
-    @Column(nullable = false, precision = 14, scale = 2)
+    @Column(nullable = false, precision = 18, scale = 2)
     private BigDecimal total = BigDecimal.ZERO;
 
-    @Column(name = "vat_total", nullable = false, precision = 14, scale = 2)
+    @Column(name = "vat_total", nullable = false, precision = 18, scale = 2)
     private BigDecimal vatTotal = BigDecimal.ZERO;
 
     @ManyToOne(fetch = FetchType.LAZY)

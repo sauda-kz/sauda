@@ -44,6 +44,9 @@ public interface LotMatchMapper {
     @Mapping(source = "offer.rawName", target = "offerName")
     @Mapping(source = "offer.brand", target = "brand")
     @Mapping(source = "offer.modelMpn", target = "modelMpn")
+    @Mapping(source = "offer.stockQuantity", target = "stockQuantity")
+    @Mapping(source = "offer.stockStatus", target = "stockStatus")
+    @Mapping(source = "offer.priceIncludesVat", target = "priceIncludesVat")
     @Mapping(
             source = "matchedRequirements",
             target = "matchedRequirements",

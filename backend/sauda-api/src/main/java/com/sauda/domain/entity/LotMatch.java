@@ -99,16 +99,16 @@ public class LotMatch {
     @Column(name = "price_check", nullable = false, columnDefinition = "check_result")
     private CheckResult priceCheck = CheckResult.unknown;
 
-    @Column(name = "estimated_unit_price", precision = 14, scale = 2)
+    @Column(name = "estimated_unit_price", precision = 18, scale = 2)
     private BigDecimal estimatedUnitPrice;
 
-    @Column(name = "estimated_total_price", precision = 14, scale = 2)
+    @Column(name = "estimated_total_price", precision = 18, scale = 2)
     private BigDecimal estimatedTotalPrice;
 
-    @Column(name = "budget_amount", precision = 14, scale = 2)
+    @Column(name = "budget_amount", precision = 18, scale = 2)
     private BigDecimal budgetAmount;
 
-    @Column(name = "estimated_margin", precision = 14, scale = 2)
+    @Column(name = "estimated_margin", precision = 18, scale = 2)
     private BigDecimal estimatedMargin;
 
     @Column(name = "needs_manual_review", nullable = false)

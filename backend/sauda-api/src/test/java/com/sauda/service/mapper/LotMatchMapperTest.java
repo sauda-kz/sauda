@@ -8,6 +8,7 @@ import com.sauda.domain.entity.Offer;
 import com.sauda.domain.entity.Organization;
 import com.sauda.domain.enums.LotMatchStatus;
 import com.sauda.domain.enums.OrganizationType;
+import com.sauda.domain.enums.StockStatus;
 import com.sauda.testsupport.LotTestFixtures;
 import java.math.BigDecimal;
 import java.util.List;
@@ -41,6 +42,9 @@ class LotMatchMapperTest {
         assertThat(card.title()).isEqualTo("SSD 1TB");
         assertThat(card.offerName()).isEqualTo("Samsung 990 PRO 1TB");
         assertThat(card.customerName()).isEqualTo("АО Заказчик");
+        assertThat(card.stockQuantity()).isEqualTo(120);
+        assertThat(card.stockStatus()).isEqualTo(StockStatus.in_stock);
+        assertThat(card.priceIncludesVat()).isTrue();
     }
 
     @Test
@@ -75,7 +79,9 @@ class LotMatchMapperTest {
         offer.setBrand("Samsung");
         offer.setModelMpn("990 PRO");
         offer.setPrice(new BigDecimal("45000"));
-        offer.setStockQty(120);
+        offer.setStockQuantity(120);
+        offer.setStockStatus(StockStatus.in_stock);
+        offer.setPriceIncludesVat(true);
 
         LotMatch match = new LotMatch();
         match.setId(UUID.randomUUID());
