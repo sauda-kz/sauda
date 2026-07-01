@@ -76,10 +76,6 @@ export function LoginPage() {
             <Button type="submit" loading={loading} className="mt-6 w-full">
               Войти
             </Button>
-
-            <p className="mt-4 text-center text-xs text-slate-400">
-              Demo: dist@technodist.kz / Sauda123!
-            </p>
           </form>
         </div>
       </div>

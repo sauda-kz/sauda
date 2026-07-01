@@ -43,3 +43,24 @@ export function formatQuantity(qty: number | null, unit: string | null): string 
   if (qty == null) return "—";
   return unit ? `${qty} ${unit}` : String(qty);
 }
+
+export function formatPriceListUpdatedAt(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  const datePart = new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+  return isToday ? `Сегодня · ${datePart} · ${timePart}` : `${datePart} · ${timePart}`;
+}

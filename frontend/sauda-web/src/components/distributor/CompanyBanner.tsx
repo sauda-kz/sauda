@@ -2,12 +2,17 @@ import { Building2, MapPin, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "../ui/Button";
 import type { OrganizationResponse } from "../../types/api";
+import { formatPriceListUpdatedAt } from "../../utils/format";
 
 interface CompanyBannerProps {
   organization: OrganizationResponse;
+  lastPriceListUpdatedAt?: string | null;
 }
 
-export function CompanyBanner({ organization }: CompanyBannerProps) {
+export function CompanyBanner({ organization, lastPriceListUpdatedAt = null }: CompanyBannerProps) {
+  const priceListUpdatedLabel = formatPriceListUpdatedAt(lastPriceListUpdatedAt);
+  const hasPriceList = priceListUpdatedLabel != null;
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -29,11 +34,20 @@ export function CompanyBanner({ organization }: CompanyBannerProps) {
             <p className="mt-3 text-xs font-medium uppercase tracking-wide text-slate-400">
               Последнее обновление прайса
             </p>
-            <p className="text-sm text-slate-600">Сегодня · 22 июня 2026 · 10:35</p>
-            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Актуальные
-            </span>
+            <p className="text-sm text-slate-600">
+              {hasPriceList ? priceListUpdatedLabel : "Прайс ещё не загружался"}
+            </p>
+            {hasPriceList ? (
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Актуальные
+              </span>
+            ) : (
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                Нет данных
+              </span>
+            )}
           </div>
         </div>
 
