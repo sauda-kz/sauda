@@ -120,6 +120,9 @@ public class LotMatch {
     @Column(name = "distributor_comment")
     private String distributorComment;
 
+    @Column(name = "sent_to_distributor_at")
+    private Instant sentToDistributorAt;
+
     @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
     private Instant createdAt;
 

@@ -11,6 +11,7 @@ import com.sauda.domain.enums.OrganizationType;
 import com.sauda.domain.enums.StockStatus;
 import com.sauda.testsupport.LotTestFixtures;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,17 @@ class LotMatchMapperTest {
         assertThat(response.offerId()).isEqualTo(match.getOffer().getId());
         assertThat(response.status()).isEqualTo(LotMatchStatus.suggested);
         assertThat(response.matchedRequirements()).containsExactly("brand");
+    }
+
+    @Test
+    void mapsSentToDistributorAt() {
+        LotMatch match = sampleMatch();
+        Instant sentAt = Instant.parse("2026-07-01T12:00:00Z");
+        match.setSentToDistributorAt(sentAt);
+
+        var response = lotMatchMapper.toResponse(match);
+
+        assertThat(response.sentToDistributorAt()).isEqualTo(sentAt);
     }
 
     @Test

@@ -242,6 +242,7 @@ class LotMatchControllerTest {
                 "",
                 null,
                 null,
+                null,
                 null);
     }
 }
