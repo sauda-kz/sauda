@@ -30,6 +30,7 @@ import java.util.HexFormat;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,6 +44,9 @@ public class RawUploadService {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("xlsx", "xls", "csv");
     private static final int MAX_ERROR_MESSAGE_LENGTH = 500;
+    private static final int MAX_FILENAME_LENGTH = 255;
+    private static final Pattern UNSAFE_FILENAME_CHARS =
+            Pattern.compile("[/\\\\\0\u0000-\u001F\u007F\"';:]");
     private static final DateTimeFormatter STORAGE_TIMESTAMP_FORMATTER =
             DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
 
@@ -188,15 +192,31 @@ public class RawUploadService {
         if (originalFilename == null || originalFilename.isBlank()) {
             throw new SaudaException("Filename is required");
         }
-        String basename = Path.of(originalFilename).getFileName().toString();
+        String basename = Path.of(originalFilename).getFileName().toString().strip();
         if (basename.isBlank() || basename.contains("..")) {
             throw new SaudaException("Invalid filename");
         }
-        String sanitized = basename.replaceAll("[^a-zA-Z0-9._-]", "_");
-        if (sanitized.isBlank()) {
+        String sanitized = UNSAFE_FILENAME_CHARS.matcher(basename).replaceAll("_").strip();
+        if (sanitized.isBlank() || sanitized.startsWith(".")) {
             throw new SaudaException("Invalid filename");
         }
-        return sanitized;
+        return truncateFilename(sanitized, MAX_FILENAME_LENGTH);
+    }
+
+    private static String truncateFilename(String filename, int maxLength) {
+        if (filename.length() <= maxLength) {
+            return filename;
+        }
+        int dotIndex = filename.lastIndexOf('.');
+        if (dotIndex <= 0) {
+            return filename.substring(0, maxLength);
+        }
+        String extension = filename.substring(dotIndex);
+        int baseMaxLength = maxLength - extension.length();
+        if (baseMaxLength <= 0) {
+            return filename.substring(0, maxLength);
+        }
+        return filename.substring(0, baseMaxLength) + extension;
     }
 
     private String buildStoragePath(UUID distributorId, String sanitizedFilename) {

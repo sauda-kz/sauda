@@ -139,6 +139,34 @@ class RawUploadServiceTest {
     }
 
     @Test
+    void uploadPreservesUnicodeFilename() {
+        MockMultipartFile file =
+                new MockMultipartFile(
+                        "file",
+                        "Прайс остатки.xlsx",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        new byte[] {1, 2, 3});
+
+        when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
+        when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
+                .thenReturn(true);
+        when(organizationRepository.getReferenceById(distributorId)).thenReturn(distributor);
+        when(appUserRepository.getReferenceById(userId)).thenReturn(uploader);
+        when(rawUploadRepository.save(any(RawUpload.class)))
+                .thenAnswer(
+                        invocation -> {
+                            RawUpload upload = invocation.getArgument(0);
+                            upload.setId(UUID.randomUUID());
+                            return upload;
+                        });
+
+        var response = rawUploadService.upload(distributorId, file);
+
+        assertThat(response.originalFilename()).isEqualTo("Прайс остатки.xlsx");
+        assertThat(response.storagePath()).endsWith("_Прайс остатки.xlsx");
+    }
+
+    @Test
     void uploadRejectsUnsupportedExtension() {
         MockMultipartFile file =
                 new MockMultipartFile(
