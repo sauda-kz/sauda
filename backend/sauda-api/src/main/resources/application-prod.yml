@@ -18,6 +18,13 @@ sauda:
     secret: ${JWT_SECRET}
     expiration-ms: ${JWT_EXPIRATION_MS:3600000}
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  storage:
+    endpoint: ${S3_ENDPOINT}
+    access-key: ${S3_ACCESS_KEY}
+    secret-key: ${S3_SECRET_KEY}
+    bucket: ${S3_BUCKET}
+    region: ${S3_REGION:us-east-1}
+    max-file-size-bytes: ${RAW_UPLOAD_MAX_BYTES:52428800}
   integrations:
     whatsapp:
       api-url: ${WHATSAPP_API_URL}
