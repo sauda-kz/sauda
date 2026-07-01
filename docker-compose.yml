@@ -19,6 +19,27 @@ services:
       timeout: 5s
       retries: 5
 
+  minio:
+    image: minio/minio:RELEASE.2025-01-20T14-49-07Z
+    container_name: sauda-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "${S3_PUBLISH_PORT:-9000}:9000"
+      - "${S3_CONSOLE_PORT:-9001}:9001"
+    networks:
+      - sauda-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     image: ${BACKEND_IMAGE:-sauda-backend:local}
     build:
@@ -29,6 +50,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       DB_HOST: postgres
@@ -37,6 +60,11 @@ services:
       DB_USER: ${DB_USER:-sauda}
       DB_PASSWORD: ${DB_PASSWORD:-sauda}
       SERVER_PORT: 8080
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_BUCKET: ${S3_BUCKET:-sauda-raw}
+      S3_REGION: ${S3_REGION:-us-east-1}
     networks:
       - sauda-network
     healthcheck:
@@ -87,3 +115,4 @@ networks:
 
 volumes:
   postgres_data:
+  minio_data:

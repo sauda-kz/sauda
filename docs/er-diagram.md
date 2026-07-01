@@ -46,6 +46,7 @@ flowchart TB
     subgraph ingest["Ingestion"]
         import_run
         import_error
+        raw_upload
     end
 
     subgraph buyer["Buyer flow — Phase 1+"]
@@ -67,6 +68,8 @@ flowchart TB
     offer --> price_history
 
     organization --> import_run --> import_error
+    organization --> raw_upload
+    app_user --> raw_upload
     import_run -.-> offer
 
     lot --> lot_match
@@ -254,6 +257,22 @@ erDiagram
         jsonb raw
     }
 
+    raw_upload {
+        uuid id PK
+        uuid distributor_id FK
+        uuid uploaded_by_user_id FK
+        varchar uploaded_by_role
+        text original_filename
+        text storage_path
+        bigint file_size
+        varchar mime_type
+        varchar checksum
+        raw_upload_status status
+        text error_message
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
     cost_center {
         uuid id PK
         uuid buyer_company_id FK
@@ -332,6 +351,8 @@ erDiagram
     organization ||--o{ import_run : imports
     import_run ||--o{ import_error : errors
     import_run ||--o{ offer : source_file
+    organization ||--o{ raw_upload : raw_files
+    app_user ||--o{ raw_upload : uploaded_by
     organization ||--o{ cost_center : buyer
     organization ||--o{ spend_limit : buyer
     app_user ||--o{ spend_limit : user_limit
@@ -378,6 +399,7 @@ erDiagram
 | `lot_match` | `LotMatch` |
 | `import_run` | `ImportRun` |
 | `import_error` | `ImportError` |
+| `raw_upload` | `RawUpload` |
 | `cost_center` | `CostCenter` |
 | `spend_limit` | `SpendLimit` |
 | `cart` | `Cart` |
