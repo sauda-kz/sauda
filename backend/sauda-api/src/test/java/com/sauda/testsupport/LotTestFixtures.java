@@ -34,9 +34,40 @@ public final class LotTestFixtures {
                 "Опыт от 3 лет",
                 "Оплата по факту",
                 Instant.parse("2026-06-01T00:00:00Z"),
+                LotStatus.active,
                 "https://goszakup.kz/lot/1",
                 "raw text",
-                LotStatus.active);
+                null);
+    }
+
+    public static CreateLotRequest incompleteCreateLotRequest() {
+        return new CreateLotRequest(
+                "manual",
+                "PUR-001",
+                "LOT-001",
+                "SSD 1TB",
+                "Description",
+                "АО Заказчик",
+                "SSD",
+                null,
+                "товар",
+                null,
+                "шт",
+                null,
+                "KZT",
+                "Алматы",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                LotStatus.active,
+                "https://goszakup.kz/lot/1",
+                null,
+                null);
     }
 
     public static UpdateLotRequest sampleUpdateLotRequest() {
@@ -64,8 +95,9 @@ public final class LotTestFixtures {
                 create.qualificationRequirements(),
                 create.contractTermsSummary(),
                 create.publishedAt(),
+                LotStatus.archived,
                 create.sourceUrl(),
                 create.rawText(),
-                LotStatus.archived);
+                null);
     }
 }

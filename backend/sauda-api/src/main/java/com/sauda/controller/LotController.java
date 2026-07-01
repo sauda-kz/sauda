@@ -39,13 +39,16 @@ public class LotController {
         this.lotService = lotService;
     }
 
-    @Operation(summary = "List lots with optional status filter")
+    @Operation(summary = "List lots with optional filters")
     @GetMapping
     @PreAuthorize("hasAuthority('lot:read')")
     public Page<LotResponse> listLots(
             @RequestParam(required = false) LotStatus status,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String source,
             @PageableDefault(size = 20) Pageable pageable) {
-        return lotService.listLots(status, pageable);
+        return lotService.listLots(status, q, category, source, pageable);
     }
 
     @Operation(summary = "Get lot by ID")

@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sauda.domain.enums.LotDataQualityStatus;
 import com.sauda.domain.enums.LotStatus;
 import com.sauda.dto.lot.LotResponse;
 import com.sauda.repository.AppUserRepository;
@@ -45,43 +46,28 @@ class LotControllerTest {
     @WithMockUser(authorities = "lot:read")
     void listLotsReturnsPage() throws Exception {
         UUID lotId = UUID.randomUUID();
-        when(lotService.listLots(eq(null), any()))
-                .thenReturn(
-                        new PageImpl<>(
-                                List.of(
-                                        new LotResponse(
-                                                lotId,
-                                                "manual",
-                                                "PUR-001",
-                                                "LOT-001",
-                                                "SSD 1TB",
-                                                "Description",
-                                                "АО Заказчик",
-                                                "SSD",
-                                                "запрос ценовых предложений",
-                                                "товар",
-                                                10,
-                                                "шт",
-                                                new BigDecimal("500000"),
-                                                "KZT",
-                                                "Алматы",
-                                                Instant.parse("2026-07-01T00:00:00Z"),
-                                                null,
-                                                "24 месяца",
-                                                "NVMe",
-                                                "Сертификат",
-                                                null,
-                                                null,
-                                                null,
-                                                LotStatus.active,
-                                                "https://goszakup.kz/lot/1",
-                                                null,
-                                                Instant.now(),
-                                                Instant.now()))));
+        when(lotService.listLots(eq(null), eq(null), eq(null), eq(null), any()))
+                .thenReturn(new PageImpl<>(List.of(sampleLotResponse(lotId))));
 
         mockMvc.perform(get("/api/v1/lots"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].title").value("SSD 1TB"));
+                .andExpect(jsonPath("$.content[0].title").value("SSD 1TB"))
+                .andExpect(jsonPath("$.content[0].matchCount").value(0));
+    }
+
+    @Test
+    @WithMockUser(authorities = "lot:read")
+    void listLotsAcceptsSearchFilters() throws Exception {
+        when(lotService.listLots(eq(LotStatus.active), eq("SSD"), eq("SSD"), eq("manual"), any()))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        mockMvc.perform(
+                        get("/api/v1/lots")
+                                .param("status", "active")
+                                .param("q", "SSD")
+                                .param("category", "SSD")
+                                .param("source", "manual"))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -144,8 +130,12 @@ class LotControllerTest {
                                 LotStatus.archived,
                                 "https://goszakup.kz/lot/1",
                                 null,
+                                null,
                                 Instant.now(),
-                                Instant.now()));
+                                Instant.now(),
+                                LotDataQualityStatus.complete,
+                                List.of(),
+                                0L));
 
         mockMvc.perform(patch("/api/v1/lots/{id}/archive", lotId))
                 .andExpect(status().isOk())
@@ -181,8 +171,12 @@ class LotControllerTest {
                 request.status(),
                 request.sourceUrl(),
                 request.rawText(),
+                UUID.randomUUID(),
                 Instant.now(),
-                Instant.now());
+                Instant.now(),
+                LotDataQualityStatus.complete,
+                List.of(),
+                0L);
     }
 
     private static String createLotJson() {
@@ -210,9 +204,9 @@ class LotControllerTest {
                   "qualificationRequirements": "Опыт от 3 лет",
                   "contractTermsSummary": "Оплата по факту",
                   "publishedAt": "2026-06-01T00:00:00Z",
+                  "status": "active",
                   "sourceUrl": "https://goszakup.kz/lot/1",
-                  "rawText": "raw text",
-                  "status": "active"
+                  "rawText": "raw text"
                 }
                 """;
     }
