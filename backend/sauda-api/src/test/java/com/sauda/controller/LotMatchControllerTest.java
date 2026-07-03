@@ -49,7 +49,7 @@ class LotMatchControllerTest {
         UUID distributorId = UUID.randomUUID();
         UUID matchId = UUID.randomUUID();
 
-        when(lotMatchService.listForDistributor(eq(distributorId), eq(null), any()))
+        when(lotMatchService.listForDistributor(eq(distributorId), eq(null), eq(false), any()))
                 .thenReturn(
                         new PageImpl<>(
                                 List.of(

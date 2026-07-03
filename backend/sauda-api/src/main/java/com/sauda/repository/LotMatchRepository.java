@@ -32,6 +32,24 @@ public interface LotMatchRepository extends JpaRepository<LotMatch, UUID> {
     List<UUID> findMatchedOfferIdsByLotId(@Param("lotId") UUID lotId);
 
     @EntityGraph(attributePaths = {"lot", "offer", "distributor"})
+    Optional<LotMatch> findByLotIdAndOfferId(UUID lotId, UUID offerId);
+
+    @EntityGraph(attributePaths = {"lot", "offer", "distributor"})
+    @Query(
+            """
+            SELECT lm FROM LotMatch lm
+            WHERE lm.distributor.id = :distributorId
+              AND lm.sentToDistributorAt IS NOT NULL
+              AND lm.matchStatus <> com.sauda.domain.enums.LotMatchStatus.suggested
+              AND (:status IS NULL OR lm.matchStatus = :status)
+            ORDER BY lm.createdAt DESC
+            """)
+    Page<LotMatch> findSentForDistributor(
+            @Param("distributorId") UUID distributorId,
+            @Param("status") LotMatchStatus status,
+            Pageable pageable);
+
+    @EntityGraph(attributePaths = {"lot", "offer", "distributor"})
     Optional<LotMatch> findById(UUID id);
 
     @EntityGraph(attributePaths = {"lot", "offer", "distributor"})

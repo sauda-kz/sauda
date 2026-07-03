@@ -4,25 +4,32 @@ import com.sauda.domain.entity.Lot;
 import com.sauda.domain.entity.LotMatch;
 import com.sauda.domain.entity.Offer;
 import com.sauda.domain.enums.LotMatchStatus;
+import com.sauda.domain.enums.LotStatus;
 import com.sauda.domain.enums.OrganizationType;
 import com.sauda.dto.lotmatch.CreateLotMatchRequest;
 import com.sauda.dto.lotmatch.DistributorLotMatchCardResponse;
 import com.sauda.dto.lotmatch.LotMatchResponse;
+import com.sauda.dto.lotmatch.SendLotToDistributorRequest;
 import com.sauda.dto.lotmatch.UpdateLotMatchStatusRequest;
 import com.sauda.exception.SaudaException;
+import com.sauda.exception.SaudaForbiddenException;
 import com.sauda.exception.SaudaNotFoundException;
 import com.sauda.repository.LotMatchRepository;
 import com.sauda.repository.OfferRepository;
 import com.sauda.repository.OrganizationRepository;
+import com.sauda.security.principal.SecurityUtils;
 import com.sauda.service.mapper.LotMatchMapper;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class LotMatchService {
 
@@ -34,6 +41,9 @@ public class LotMatchService {
                     LotMatchStatus.not_matched,
                     LotMatchStatus.mismatch_reported);
 
+    private static final Set<LotMatchStatus> SEND_ALLOWED_STATUSES =
+            EnumSet.of(LotMatchStatus.matched, LotMatchStatus.needs_review);
+
     private final LotMatchRepository lotMatchRepository;
     private final LotService lotService;
     private final OfferRepository offerRepository;
@@ -41,6 +51,7 @@ public class LotMatchService {
     private final LotMatchMapper lotMatchMapper;
     private final LotMatchCalculator lotMatchCalculator;
     private final TenantAccessService tenantAccessService;
+    private final InternalNotificationService internalNotificationService;
 
     public LotMatchService(
             LotMatchRepository lotMatchRepository,
@@ -49,7 +60,8 @@ public class LotMatchService {
             OrganizationRepository organizationRepository,
             LotMatchMapper lotMatchMapper,
             LotMatchCalculator lotMatchCalculator,
-            TenantAccessService tenantAccessService) {
+            TenantAccessService tenantAccessService,
+            InternalNotificationService internalNotificationService) {
         this.lotMatchRepository = lotMatchRepository;
         this.lotService = lotService;
         this.offerRepository = offerRepository;
@@ -57,8 +69,13 @@ public class LotMatchService {
         this.lotMatchMapper = lotMatchMapper;
         this.lotMatchCalculator = lotMatchCalculator;
         this.tenantAccessService = tenantAccessService;
+        this.internalNotificationService = internalNotificationService;
     }
 
+    /**
+     * Creates an internal draft match ({@code suggested}) without notifying the distributor. Use
+     * {@link #sendToDistributor(UUID, SendLotToDistributorRequest)} to make a match visible.
+     */
     @Transactional
     public LotMatchResponse createMatch(CreateLotMatchRequest request) {
         Lot lot = lotService.findLotOrThrow(request.lotId());
@@ -100,6 +117,54 @@ public class LotMatchService {
         return lotMatchMapper.toResponse(lotMatchRepository.save(match));
     }
 
+    /**
+     * Sends a lot to the distributor: creates or reactivates a match, sets {@code matched} (or
+     * {@code needs_review}), records {@code sent_to_distributor_at}, and triggers notifications.
+     */
+    @Transactional
+    public LotMatchResponse sendToDistributor(UUID lotId, SendLotToDistributorRequest request) {
+        assertPlatformAccess();
+        Lot lot = lotService.findLotOrThrow(lotId);
+        assertLotSendable(lot);
+
+        Offer offer =
+                offerRepository
+                        .findWithDistributorById(request.offerId())
+                        .orElseThrow(
+                                () ->
+                                        new SaudaNotFoundException(
+                                                "Offer not found: " + request.offerId()));
+
+        LotMatchStatus targetStatus = resolveSendStatus(request.status());
+        LotMatch match =
+                lotMatchRepository
+                        .findByLotIdAndOfferId(lotId, request.offerId())
+                        .orElseGet(LotMatch::new);
+
+        if (match.getId() == null) {
+            match.setLot(lot);
+            match.setOffer(offer);
+            match.setDistributor(offer.getDistributor());
+        }
+
+        applySendRequestFields(match, request, targetStatus);
+        boolean derivedRequiresReview = lotMatchCalculator.applyDerivedFields(match, lot, offer);
+        match.setNeedsManualReview(match.isNeedsManualReview() || derivedRequiresReview);
+        match.setSentToDistributorAt(Instant.now());
+
+        LotMatch saved = lotMatchRepository.save(match);
+        internalNotificationService.notifyLotSent(saved);
+
+        log.info(
+                "Lot sent to distributor: lotId={}, offerId={}, distributorId={}, matchId={}",
+                lotId,
+                request.offerId(),
+                offer.getDistributor().getId(),
+                saved.getId());
+
+        return lotMatchMapper.toResponse(saved);
+    }
+
     @Transactional(readOnly = true)
     public Page<LotMatchResponse> listByLot(UUID lotId, Pageable pageable) {
         lotService.findLotOrThrow(lotId);
@@ -113,15 +178,28 @@ public class LotMatchService {
 
     @Transactional(readOnly = true)
     public Page<DistributorLotMatchCardResponse> listForDistributor(
-            UUID distributorId, LotMatchStatus status, Pageable pageable) {
+            UUID distributorId,
+            LotMatchStatus status,
+            boolean includeUnsent,
+            Pageable pageable) {
         UUID resolvedDistributorId = tenantAccessService.resolveDistributorId(distributorId);
         assertDistributorOrg(resolvedDistributorId);
-        Page<LotMatch> page =
-                status != null
-                        ? lotMatchRepository.findByDistributorIdAndMatchStatusOrderByCreatedAtDesc(
-                                resolvedDistributorId, status, pageable)
-                        : lotMatchRepository.findByDistributorIdOrderByCreatedAtDesc(
-                                resolvedDistributorId, pageable);
+
+        Page<LotMatch> page;
+        if (includeUnsent) {
+            assertPlatformAccess();
+            page =
+                    status != null
+                            ? lotMatchRepository
+                                    .findByDistributorIdAndMatchStatusOrderByCreatedAtDesc(
+                                            resolvedDistributorId, status, pageable)
+                            : lotMatchRepository.findByDistributorIdOrderByCreatedAtDesc(
+                                    resolvedDistributorId, pageable);
+        } else {
+            page =
+                    lotMatchRepository.findSentForDistributor(
+                            resolvedDistributorId, status, pageable);
+        }
         return page.map(lotMatchMapper::toDistributorCard);
     }
 
@@ -130,6 +208,7 @@ public class LotMatchService {
         UUID resolvedDistributorId = tenantAccessService.resolveDistributorId(distributorId);
         assertDistributorOrg(resolvedDistributorId);
         LotMatch match = findMatchForDistributorOrThrow(matchId, resolvedDistributorId);
+        assertVisibleToDistributor(match);
         return lotMatchMapper.toDistributorCard(match);
     }
 
@@ -143,11 +222,60 @@ public class LotMatchService {
         }
 
         LotMatch match = findMatchForDistributorOrThrow(matchId, resolvedDistributorId);
+        assertVisibleToDistributor(match);
         match.setMatchStatus(request.status());
         if (request.distributorComment() != null) {
             match.setDistributorComment(request.distributorComment());
         }
         return lotMatchMapper.toDistributorCard(lotMatchRepository.save(match));
+    }
+
+    private static void applySendRequestFields(
+            LotMatch match, SendLotToDistributorRequest request, LotMatchStatus targetStatus) {
+        match.setMatchStatus(targetStatus);
+        if (request.matchReason() != null) {
+            match.setMatchReason(request.matchReason());
+        } else if (match.getMatchReason() == null) {
+            match.setMatchReason("");
+        }
+        if (request.riskFlags() != null) {
+            match.setRiskFlags(request.riskFlags());
+        }
+        if (request.adminComment() != null) {
+            match.setAdminComment(request.adminComment());
+        } else if (match.getAdminComment() == null) {
+            match.setAdminComment("");
+        }
+    }
+
+    private static LotMatchStatus resolveSendStatus(LotMatchStatus requestedStatus) {
+        if (requestedStatus == null) {
+            return LotMatchStatus.matched;
+        }
+        if (!SEND_ALLOWED_STATUSES.contains(requestedStatus)) {
+            throw new SaudaException("Status not allowed for send: " + requestedStatus);
+        }
+        return requestedStatus;
+    }
+
+    private static void assertLotSendable(Lot lot) {
+        if (lot.getStatus() == LotStatus.archived || lot.getStatus() == LotStatus.cancelled) {
+            throw new SaudaException("Cannot send archived or cancelled lot");
+        }
+    }
+
+    private static void assertPlatformAccess() {
+        if (SecurityUtils.requirePrincipal().organizationType() != OrganizationType.platform) {
+            throw new SaudaForbiddenException("Operation is available for platform users only");
+        }
+    }
+
+    private static void assertVisibleToDistributor(LotMatch match) {
+        if (match.getSentToDistributorAt() == null
+                && SecurityUtils.requirePrincipal().organizationType()
+                        != OrganizationType.platform) {
+            throw new SaudaNotFoundException("Lot match not found: " + match.getId());
+        }
     }
 
     private void assertDistributorOrg(UUID distributorId) {

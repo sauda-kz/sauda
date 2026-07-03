@@ -11,9 +11,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sauda.domain.enums.LotDataQualityStatus;
+import com.sauda.domain.enums.LotMatchStatus;
 import com.sauda.domain.enums.LotStatus;
 import com.sauda.dto.lot.LotResponse;
 import com.sauda.repository.AppUserRepository;
+import com.sauda.service.LotMatchService;
 import com.sauda.service.LotMatchSuggestionService;
 import com.sauda.service.LotService;
 import com.sauda.testsupport.LotTestFixtures;
@@ -42,6 +44,7 @@ class LotControllerTest {
 
     @MockitoBean private LotService lotService;
     @MockitoBean private LotMatchSuggestionService lotMatchSuggestionService;
+    @MockitoBean private LotMatchService lotMatchService;
     @MockitoBean private AppUserRepository appUserRepository;
 
     @Test
@@ -70,6 +73,55 @@ class LotControllerTest {
                                 .param("category", "SSD")
                                 .param("source", "manual"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(authorities = "lot_match:manage")
+    void sendToDistributorReturnsMatch() throws Exception {
+        UUID lotId = UUID.randomUUID();
+        UUID offerId = UUID.randomUUID();
+        UUID matchId = UUID.randomUUID();
+
+        when(lotMatchService.sendToDistributor(eq(lotId), any()))
+                .thenReturn(
+                        new com.sauda.dto.lotmatch.LotMatchResponse(
+                                matchId,
+                                lotId,
+                                offerId,
+                                UUID.randomUUID(),
+                                LotMatchStatus.matched,
+                                null,
+                                "Category match",
+                                List.of(),
+                                List.of(),
+                                List.of(),
+                                10,
+                                15,
+                                com.sauda.domain.enums.CheckResult.ok,
+                                com.sauda.domain.enums.CheckResult.ok,
+                                com.sauda.domain.enums.CheckResult.ok,
+                                null,
+                                null,
+                                null,
+                                null,
+                                false,
+                                "",
+                                null,
+                                java.time.Instant.now(),
+                                null,
+                                null));
+
+        mockMvc.perform(
+                        post("/api/v1/lots/{id}/send-to-distributor", lotId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
+                                        {"offerId":"%s","matchReason":"Category match"}
+                                        """
+                                                .formatted(offerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("matched"))
+                .andExpect(jsonPath("$.sentToDistributorAt").exists());
     }
 
     @Test

@@ -5,7 +5,10 @@ import com.sauda.domain.enums.LotStatus;
 import com.sauda.dto.lot.CreateLotRequest;
 import com.sauda.dto.lot.LotResponse;
 import com.sauda.dto.lot.UpdateLotRequest;
+import com.sauda.dto.lotmatch.LotMatchResponse;
 import com.sauda.dto.lotmatch.PotentialMatchResponse;
+import com.sauda.dto.lotmatch.SendLotToDistributorRequest;
+import com.sauda.service.LotMatchService;
 import com.sauda.service.LotMatchSuggestionService;
 import com.sauda.service.LotService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,10 +41,15 @@ public class LotController {
 
     private final LotService lotService;
     private final LotMatchSuggestionService lotMatchSuggestionService;
+    private final LotMatchService lotMatchService;
 
-    public LotController(LotService lotService, LotMatchSuggestionService lotMatchSuggestionService) {
+    public LotController(
+            LotService lotService,
+            LotMatchSuggestionService lotMatchSuggestionService,
+            LotMatchService lotMatchService) {
         this.lotService = lotService;
         this.lotMatchSuggestionService = lotMatchSuggestionService;
+        this.lotMatchService = lotMatchService;
     }
 
     @Operation(summary = "List lots with optional filters")
@@ -68,6 +76,14 @@ public class LotController {
     @PreAuthorize("hasAuthority('lot_match:read')")
     public List<PotentialMatchResponse> getPotentialMatches(@PathVariable UUID id) {
         return lotMatchSuggestionService.suggestForLot(id);
+    }
+
+    @Operation(summary = "Send lot to distributor via offer match")
+    @PostMapping("/{id}/send-to-distributor")
+    @PreAuthorize("hasAuthority('lot_match:manage')")
+    public LotMatchResponse sendToDistributor(
+            @PathVariable UUID id, @Valid @RequestBody SendLotToDistributorRequest request) {
+        return lotMatchService.sendToDistributor(id, request);
     }
 
     @Operation(summary = "Create a new lot")

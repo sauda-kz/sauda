@@ -16,6 +16,10 @@ import com.sauda.dto.lotmatch.PotentialMatchResponse;
 import com.sauda.exception.SaudaForbiddenException;
 import com.sauda.repository.LotMatchRepository;
 import com.sauda.repository.OfferRepository;
+import com.sauda.service.matching.BrandMatchSignalEvaluator;
+import com.sauda.service.matching.CategoryMatchSignalEvaluator;
+import com.sauda.service.matching.ModelMatchSignalEvaluator;
+import com.sauda.service.matching.NameOverlapMatchSignalEvaluator;
 import com.sauda.testsupport.OfferTestFixtures;
 import com.sauda.testsupport.SecurityTestFixtures;
 import java.math.BigDecimal;
@@ -23,11 +27,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -37,9 +40,24 @@ class LotMatchSuggestionServiceTest {
     @Mock private LotService lotService;
     @Mock private OfferRepository offerRepository;
     @Mock private LotMatchRepository lotMatchRepository;
-    @Spy private LotMatchCalculator lotMatchCalculator = new LotMatchCalculator();
 
-    @InjectMocks private LotMatchSuggestionService lotMatchSuggestionService;
+    private final LotMatchCalculator lotMatchCalculator = new LotMatchCalculator();
+    private LotMatchSuggestionService lotMatchSuggestionService;
+
+    @BeforeEach
+    void setUp() {
+        lotMatchSuggestionService =
+                new LotMatchSuggestionService(
+                        lotService,
+                        offerRepository,
+                        lotMatchRepository,
+                        lotMatchCalculator,
+                        List.of(
+                                new CategoryMatchSignalEvaluator(),
+                                new NameOverlapMatchSignalEvaluator(),
+                                new BrandMatchSignalEvaluator(),
+                                new ModelMatchSignalEvaluator()));
+    }
 
     @AfterEach
     void tearDown() {
