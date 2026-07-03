@@ -19,11 +19,13 @@ import com.sauda.repository.OfferRepository;
 import com.sauda.repository.OrganizationRepository;
 import com.sauda.security.principal.SecurityUtils;
 import com.sauda.service.mapper.LotMatchMapper;
+import com.sauda.service.notification.event.LotSentToDistributorEvent;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -51,7 +53,7 @@ public class LotMatchService {
     private final LotMatchMapper lotMatchMapper;
     private final LotMatchCalculator lotMatchCalculator;
     private final TenantAccessService tenantAccessService;
-    private final InternalNotificationService internalNotificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public LotMatchService(
             LotMatchRepository lotMatchRepository,
@@ -61,7 +63,7 @@ public class LotMatchService {
             LotMatchMapper lotMatchMapper,
             LotMatchCalculator lotMatchCalculator,
             TenantAccessService tenantAccessService,
-            InternalNotificationService internalNotificationService) {
+            ApplicationEventPublisher eventPublisher) {
         this.lotMatchRepository = lotMatchRepository;
         this.lotService = lotService;
         this.offerRepository = offerRepository;
@@ -69,7 +71,7 @@ public class LotMatchService {
         this.lotMatchMapper = lotMatchMapper;
         this.lotMatchCalculator = lotMatchCalculator;
         this.tenantAccessService = tenantAccessService;
-        this.internalNotificationService = internalNotificationService;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -153,7 +155,7 @@ public class LotMatchService {
         match.setSentToDistributorAt(Instant.now());
 
         LotMatch saved = lotMatchRepository.save(match);
-        internalNotificationService.notifyLotSent(saved);
+        eventPublisher.publishEvent(new LotSentToDistributorEvent(saved.getId()));
 
         log.info(
                 "Lot sent to distributor: lotId={}, offerId={}, distributorId={}, matchId={}",

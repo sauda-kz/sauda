@@ -26,6 +26,7 @@ import com.sauda.repository.LotMatchRepository;
 import com.sauda.repository.OfferRepository;
 import com.sauda.repository.OrganizationRepository;
 import com.sauda.service.mapper.LotMatchMapper;
+import com.sauda.service.notification.event.LotSentToDistributorEvent;
 import com.sauda.testsupport.SecurityTestFixtures;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -52,7 +53,7 @@ class LotMatchServiceTest {
     @Mock private OfferRepository offerRepository;
     @Mock private OrganizationRepository organizationRepository;
     @Mock private TenantAccessService tenantAccessService;
-    @Mock private InternalNotificationService internalNotificationService;
+    @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     private final LotMatchMapper lotMatchMapper = Mappers.getMapper(LotMatchMapper.class);
     private final LotMatchCalculator lotMatchCalculator = new LotMatchCalculator();
@@ -76,7 +77,7 @@ class LotMatchServiceTest {
                         lotMatchMapper,
                         lotMatchCalculator,
                         tenantAccessService,
-                        internalNotificationService);
+                        eventPublisher);
 
         lotId = UUID.randomUUID();
         offerId = UUID.randomUUID();
@@ -129,7 +130,7 @@ class LotMatchServiceTest {
         assertThat(saved.getMatchReason()).isEqualTo("Category match");
         assertThat(saved.getRiskFlags()).containsExactly("on_order");
         assertThat(response.status()).isEqualTo(LotMatchStatus.matched);
-        verify(internalNotificationService).notifyLotSent(saved);
+        verify(eventPublisher).publishEvent(any(LotSentToDistributorEvent.class));
     }
 
     @Test
@@ -151,7 +152,7 @@ class LotMatchServiceTest {
 
         assertThat(existing.getMatchStatus()).isEqualTo(LotMatchStatus.matched);
         assertThat(existing.getSentToDistributorAt()).isNotNull();
-        verify(internalNotificationService).notifyLotSent(existing);
+        verify(eventPublisher).publishEvent(any(LotSentToDistributorEvent.class));
     }
 
     @Test
