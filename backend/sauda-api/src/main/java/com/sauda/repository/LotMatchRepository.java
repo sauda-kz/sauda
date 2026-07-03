@@ -28,6 +28,9 @@ public interface LotMatchRepository extends JpaRepository<LotMatch, UUID> {
 
     boolean existsByLotIdAndOfferId(UUID lotId, UUID offerId);
 
+    @Query("SELECT lm.offer.id FROM LotMatch lm WHERE lm.lot.id = :lotId")
+    List<UUID> findMatchedOfferIdsByLotId(@Param("lotId") UUID lotId);
+
     @EntityGraph(attributePaths = {"lot", "offer", "distributor"})
     Optional<LotMatch> findById(UUID id);
 

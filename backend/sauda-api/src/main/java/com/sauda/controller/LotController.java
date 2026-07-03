@@ -5,11 +5,14 @@ import com.sauda.domain.enums.LotStatus;
 import com.sauda.dto.lot.CreateLotRequest;
 import com.sauda.dto.lot.LotResponse;
 import com.sauda.dto.lot.UpdateLotRequest;
+import com.sauda.dto.lotmatch.PotentialMatchResponse;
+import com.sauda.service.LotMatchSuggestionService;
 import com.sauda.service.LotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,9 +37,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class LotController {
 
     private final LotService lotService;
+    private final LotMatchSuggestionService lotMatchSuggestionService;
 
-    public LotController(LotService lotService) {
+    public LotController(LotService lotService, LotMatchSuggestionService lotMatchSuggestionService) {
         this.lotService = lotService;
+        this.lotMatchSuggestionService = lotMatchSuggestionService;
     }
 
     @Operation(summary = "List lots with optional filters")
@@ -56,6 +61,13 @@ public class LotController {
     @PreAuthorize("hasAuthority('lot:read')")
     public LotResponse getLot(@PathVariable UUID id) {
         return lotService.getLot(id);
+    }
+
+    @Operation(summary = "List potential offer matches for lot")
+    @GetMapping("/{id}/potential-matches")
+    @PreAuthorize("hasAuthority('lot_match:read')")
+    public List<PotentialMatchResponse> getPotentialMatches(@PathVariable UUID id) {
+        return lotMatchSuggestionService.suggestForLot(id);
     }
 
     @Operation(summary = "Create a new lot")

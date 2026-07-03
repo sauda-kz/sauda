@@ -14,6 +14,7 @@ import com.sauda.domain.enums.LotDataQualityStatus;
 import com.sauda.domain.enums.LotStatus;
 import com.sauda.dto.lot.LotResponse;
 import com.sauda.repository.AppUserRepository;
+import com.sauda.service.LotMatchSuggestionService;
 import com.sauda.service.LotService;
 import com.sauda.testsupport.LotTestFixtures;
 import com.sauda.testsupport.WebMvcSecurityTestConfig;
@@ -40,6 +41,7 @@ class LotControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private LotService lotService;
+    @MockitoBean private LotMatchSuggestionService lotMatchSuggestionService;
     @MockitoBean private AppUserRepository appUserRepository;
 
     @Test
