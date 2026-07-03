@@ -9,13 +9,16 @@ export function LoginPage() {
   const location = useLocation();
   const stateError = (location.state as { error?: string } | null)?.error;
 
-  const [email, setEmail] = useState("dist@technodist.kz");
+  const [email, setEmail] = useState("admin@sauda.kz");
   const [password, setPassword] = useState("Sauda123!");
   const [error, setError] = useState(stateError ?? "");
   const [loading, setLoading] = useState(false);
 
   if (token && user?.organizationType === "distributor") {
     return <Navigate to="/lots" replace />;
+  }
+  if (token && user?.organizationType === "platform") {
+    return <Navigate to="/admin/lots" replace />;
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -40,7 +43,7 @@ export function LoginPage() {
               S
             </div>
             <h1 className="mt-4 text-2xl font-bold text-slate-900">Вход в Sauda</h1>
-            <p className="mt-2 text-sm text-slate-500">Кабинет дистрибьютора</p>
+            <p className="mt-2 text-sm text-slate-500">Платформа или кабинет дистрибьютора</p>
           </div>
 
           <form

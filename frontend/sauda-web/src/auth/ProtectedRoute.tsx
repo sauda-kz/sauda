@@ -30,3 +30,15 @@ export function DistributorRoute() {
 
   return <Outlet />;
 }
+
+export function AdminRoute() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return null;
+
+  if (user && user.organizationType !== "platform") {
+    return <Navigate to="/login" replace state={{ error: "Доступ только для администратора" }} />;
+  }
+
+  return <Outlet />;
+}
