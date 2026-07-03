@@ -58,6 +58,9 @@ export interface DistributorLotMatchCard {
   offerName: string | null;
   brand: string | null;
   modelMpn: string | null;
+  stockQuantity: number | null;
+  stockStatus: string | null;
+  priceIncludesVat: boolean | null;
   availableQuantity: number;
   estimatedUnitPrice: number | null;
   estimatedTotalPrice: number | null;

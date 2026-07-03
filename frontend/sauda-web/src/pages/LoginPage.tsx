@@ -9,13 +9,13 @@ export function LoginPage() {
   const location = useLocation();
   const stateError = (location.state as { error?: string } | null)?.error;
 
-  const [email, setEmail] = useState("admin@sauda.kz");
+  const [email, setEmail] = useState("distributor-a@shop.kz");
   const [password, setPassword] = useState("Sauda123!");
   const [error, setError] = useState(stateError ?? "");
   const [loading, setLoading] = useState(false);
 
   if (token && user?.organizationType === "distributor") {
-    return <Navigate to="/lots" replace />;
+    return <Navigate to="/suitable-lots" replace />;
   }
   if (token && user?.organizationType === "platform") {
     return <Navigate to="/admin/lots" replace />;
