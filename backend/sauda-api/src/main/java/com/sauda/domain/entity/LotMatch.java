@@ -22,9 +22,7 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.hibernate.type.SqlTypes;
 
 @Getter
@@ -56,7 +54,7 @@ public class LotMatch {
     private Organization distributor;
 
     @Enumerated(EnumType.STRING)
-    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "match_status", nullable = false, columnDefinition = "lot_match_status")
     private LotMatchStatus matchStatus = LotMatchStatus.suggested;
 
@@ -85,17 +83,17 @@ public class LotMatch {
     private int availableQuantity;
 
     @Enumerated(EnumType.STRING)
-    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "quantity_check", nullable = false, columnDefinition = "check_result")
     private CheckResult quantityCheck = CheckResult.unknown;
 
     @Enumerated(EnumType.STRING)
-    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "stock_check", nullable = false, columnDefinition = "check_result")
     private CheckResult stockCheck = CheckResult.unknown;
 
     @Enumerated(EnumType.STRING)
-    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "price_check", nullable = false, columnDefinition = "check_result")
     private CheckResult priceCheck = CheckResult.unknown;
 

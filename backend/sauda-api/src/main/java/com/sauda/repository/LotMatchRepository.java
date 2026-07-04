@@ -39,14 +39,15 @@ public interface LotMatchRepository extends JpaRepository<LotMatch, UUID> {
             """
             SELECT lm FROM LotMatch lm
             WHERE lm.distributor.id = :distributorId
-              AND lm.sentToDistributorAt IS NOT NULL
-              AND lm.matchStatus <> com.sauda.domain.enums.LotMatchStatus.suggested
-              AND (:status IS NULL OR lm.matchStatus = :status)
+              AND (:onlySent = false OR lm.sentToDistributorAt IS NOT NULL)
+              AND cast(lm.matchStatus as string) <> 'suggested'
+              AND (:status IS NULL OR cast(lm.matchStatus as string) = :status)
             ORDER BY lm.createdAt DESC
             """)
-    Page<LotMatch> findSentForDistributor(
+    Page<LotMatch> findForDistributor(
             @Param("distributorId") UUID distributorId,
-            @Param("status") LotMatchStatus status,
+            @Param("onlySent") boolean onlySent,
+            @Param("status") String status,
             Pageable pageable);
 
     @EntityGraph(attributePaths = {"lot", "offer", "distributor"})

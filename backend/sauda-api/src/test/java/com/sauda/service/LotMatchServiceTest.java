@@ -336,8 +336,8 @@ class LotMatchServiceTest {
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
         when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
-        when(lotMatchRepository.findSentForDistributor(
-                        eq(distributorId), eq(LotMatchStatus.matched), eq(pageable)))
+        when(lotMatchRepository.findForDistributor(
+                        eq(distributorId), eq(true), eq("matched"), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(match)));
 
         var page =
@@ -378,8 +378,8 @@ class LotMatchServiceTest {
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
         when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
-        when(lotMatchRepository.findSentForDistributor(
-                        eq(distributorId), eq(LotMatchStatus.suggested), eq(pageable)))
+        when(lotMatchRepository.findForDistributor(
+                        eq(distributorId), eq(true), eq("suggested"), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(match)));
 
         var page =

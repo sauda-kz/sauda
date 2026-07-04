@@ -183,22 +183,16 @@ public class LotMatchService {
             UUID distributorId, LotMatchStatus status, boolean includeUnsent, Pageable pageable) {
         UUID resolvedDistributorId = tenantAccessService.resolveDistributorId(distributorId);
         assertDistributorOrg(resolvedDistributorId);
-
-        Page<LotMatch> page;
         if (includeUnsent) {
             assertPlatformAccess();
-            page =
-                    status != null
-                            ? lotMatchRepository
-                                    .findByDistributorIdAndMatchStatusOrderByCreatedAtDesc(
-                                            resolvedDistributorId, status, pageable)
-                            : lotMatchRepository.findByDistributorIdOrderByCreatedAtDesc(
-                                    resolvedDistributorId, pageable);
-        } else {
-            page =
-                    lotMatchRepository.findSentForDistributor(
-                            resolvedDistributorId, status, pageable);
         }
+
+        Page<LotMatch> page =
+                lotMatchRepository.findForDistributor(
+                        resolvedDistributorId,
+                        !includeUnsent,
+                        status != null ? status.name() : null,
+                        pageable);
         return page.map(lotMatchMapper::toDistributorCard);
     }
 
