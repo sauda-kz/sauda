@@ -97,8 +97,7 @@ class OfferServiceTest {
 
         var page =
                 offerService.search(
-                        new OfferSearchCriteria(
-                                UUID.randomUUID(), null, null, null, null, true),
+                        new OfferSearchCriteria(UUID.randomUUID(), null, null, null, null, true),
                         Pageable.ofSize(20));
 
         assertThat(page.getContent()).hasSize(1);

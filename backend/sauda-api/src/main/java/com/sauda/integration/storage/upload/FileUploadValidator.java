@@ -13,7 +13,8 @@ public class FileUploadValidator {
         this.filenameSanitizer = filenameSanitizer;
     }
 
-    public void validatePresent(MultipartFile file, FileUploadPolicy policy, long maxFileSizeBytes) {
+    public void validatePresent(
+            MultipartFile file, FileUploadPolicy policy, long maxFileSizeBytes) {
         if (file == null || file.isEmpty()) {
             throw new SaudaException("File is required");
         }

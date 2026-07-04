@@ -71,8 +71,7 @@ class InternalNotificationControllerTest {
                 .andExpect(jsonPath("$.status").value("read"));
     }
 
-    private static InternalNotificationResponse sampleResponse(
-            UUID id, NotificationStatus status) {
+    private static InternalNotificationResponse sampleResponse(UUID id, NotificationStatus status) {
         return new InternalNotificationResponse(
                 id,
                 "Новый подходящий лот",

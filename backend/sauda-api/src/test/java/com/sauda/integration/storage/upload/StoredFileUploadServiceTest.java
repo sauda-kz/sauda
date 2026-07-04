@@ -95,9 +95,7 @@ class StoredFileUploadServiceTest {
         assertThatThrownBy(
                         () ->
                                 storedFileUploadService.prepare(
-                                        file,
-                                        FileUploadPolicies.LOT_ATTACHMENT,
-                                        "lots/lot-id"))
+                                        file, FileUploadPolicies.LOT_ATTACHMENT, "lots/lot-id"))
                 .isInstanceOf(SaudaException.class)
                 .hasMessageContaining("Unsupported file type");
     }
@@ -120,8 +118,7 @@ class StoredFileUploadServiceTest {
     @Test
     void prepareRejectsOversizedContent() {
         byte[] content = "x".repeat(2048).getBytes(StandardCharsets.UTF_8);
-        MockMultipartFile file =
-                new MockMultipartFile("file", "prices.csv", "text/csv", content);
+        MockMultipartFile file = new MockMultipartFile("file", "prices.csv", "text/csv", content);
 
         assertThatThrownBy(
                         () ->

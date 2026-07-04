@@ -41,14 +41,12 @@ public final class OfferSpecifications {
             if (StringUtils.hasText(criteria.brand())) {
                 String pattern = "%" + criteria.brand().trim().toLowerCase() + "%";
                 predicates.add(
-                        criteriaBuilder.like(
-                                criteriaBuilder.lower(root.get("brand")), pattern));
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("brand")), pattern));
             }
             if (StringUtils.hasText(criteria.query())) {
                 String pattern = "%" + criteria.query().trim().toLowerCase() + "%";
                 predicates.add(
-                        criteriaBuilder.like(
-                                criteriaBuilder.lower(root.get("rawName")), pattern));
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("rawName")), pattern));
             }
             if (criteria.stockStatus() != null) {
                 predicates.add(

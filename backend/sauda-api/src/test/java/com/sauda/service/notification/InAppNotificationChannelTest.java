@@ -39,8 +39,7 @@ class InAppNotificationChannelTest {
         AppUser second = new AppUser();
         second.setId(UUID.randomUUID());
 
-        channel.deliver(
-                new NotificationPayload(match, List.of(first, second), "Title", "Message"));
+        channel.deliver(new NotificationPayload(match, List.of(first, second), "Title", "Message"));
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<InternalNotification>> captor = ArgumentCaptor.forClass(List.class);

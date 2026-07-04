@@ -82,7 +82,8 @@ class LotMatchSuggestionServiceTest {
         assertThat(suggestions).hasSize(1);
         assertThat(suggestions.getFirst().offerId()).isEqualTo(offerId);
         assertThat(suggestions.getFirst().matchReason()).contains("Совпала категория: SSD");
-        assertThat(suggestions.getFirst().confidenceScore()).isGreaterThanOrEqualTo(new BigDecimal("0.40"));
+        assertThat(suggestions.getFirst().confidenceScore())
+                .isGreaterThanOrEqualTo(new BigDecimal("0.40"));
     }
 
     @Test

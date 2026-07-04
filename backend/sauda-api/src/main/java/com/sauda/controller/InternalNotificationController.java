@@ -27,8 +27,7 @@ public class InternalNotificationController {
 
     private final InternalNotificationService internalNotificationService;
 
-    public InternalNotificationController(
-            InternalNotificationService internalNotificationService) {
+    public InternalNotificationController(InternalNotificationService internalNotificationService) {
         this.internalNotificationService = internalNotificationService;
     }
 

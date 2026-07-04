@@ -119,7 +119,11 @@ class LotMatchServiceTest {
                 lotMatchService.sendToDistributor(
                         lotId,
                         new SendLotToDistributorRequest(
-                                offerId, "Category match", List.of("on_order"), "Please review", null));
+                                offerId,
+                                "Category match",
+                                List.of("on_order"),
+                                "Please review",
+                                null));
 
         ArgumentCaptor<LotMatch> captor = ArgumentCaptor.forClass(LotMatch.class);
         verify(lotMatchRepository).save(captor.capture());

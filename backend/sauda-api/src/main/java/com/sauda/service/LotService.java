@@ -130,8 +130,7 @@ public class LotService {
         AppUser creator =
                 appUserRepository
                         .findById(userId)
-                        .orElseThrow(
-                                () -> new SaudaNotFoundException("User not found: " + userId));
+                        .orElseThrow(() -> new SaudaNotFoundException("User not found: " + userId));
         lot.setCreatedBy(creator);
     }
 
@@ -152,6 +151,8 @@ public class LotService {
         }
         List<UUID> lotIds = lots.stream().map(Lot::getId).toList();
         return lotMatchRepository.countMatchesByLotIds(lotIds).stream()
-                .collect(Collectors.toMap(LotMatchCountView::getLotId, LotMatchCountView::getMatchCount));
+                .collect(
+                        Collectors.toMap(
+                                LotMatchCountView::getLotId, LotMatchCountView::getMatchCount));
     }
 }

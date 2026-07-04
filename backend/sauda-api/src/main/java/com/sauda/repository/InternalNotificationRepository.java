@@ -9,8 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface InternalNotificationRepository
-        extends JpaRepository<InternalNotification, UUID> {
+public interface InternalNotificationRepository extends JpaRepository<InternalNotification, UUID> {
 
     @EntityGraph(attributePaths = {"lotMatch", "lotMatch.lot"})
     Page<InternalNotification> findByUserIdOrderByCreatedAtDesc(UUID userId, Pageable pageable);

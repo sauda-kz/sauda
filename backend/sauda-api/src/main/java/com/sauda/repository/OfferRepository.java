@@ -7,7 +7,8 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface OfferRepository extends JpaRepository<Offer, UUID>, JpaSpecificationExecutor<Offer> {
+public interface OfferRepository
+        extends JpaRepository<Offer, UUID>, JpaSpecificationExecutor<Offer> {
 
     @EntityGraph(attributePaths = "distributor")
     Optional<Offer> findWithDistributorById(UUID id);

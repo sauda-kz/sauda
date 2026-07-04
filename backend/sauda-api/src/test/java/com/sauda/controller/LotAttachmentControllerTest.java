@@ -60,9 +60,7 @@ class LotAttachmentControllerTest {
                                 UUID.randomUUID(),
                                 Instant.now()));
 
-        mockMvc.perform(
-                        multipart("/api/v1/lots/{lotId}/attachments", lotId)
-                                .file(file))
+        mockMvc.perform(multipart("/api/v1/lots/{lotId}/attachments", lotId).file(file))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.originalFilename").value("spec.pdf"));
     }
@@ -105,7 +103,10 @@ class LotAttachmentControllerTest {
                                 lotId,
                                 attachmentId))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"spec.pdf\""));
+                .andExpect(
+                        header().string(
+                                        HttpHeaders.CONTENT_DISPOSITION,
+                                        "attachment; filename=\"spec.pdf\""));
     }
 
     @Test

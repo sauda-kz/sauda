@@ -11,13 +11,17 @@ class LotValidationServiceTest {
 
     @Test
     void completeLotHasNoMissingKeyFields() {
-        assertThat(lotValidationService.findMissingKeyFields(LotTestFixtures.sampleCreateLotRequest()))
+        assertThat(
+                        lotValidationService.findMissingKeyFields(
+                                LotTestFixtures.sampleCreateLotRequest()))
                 .isEmpty();
     }
 
     @Test
     void incompleteLotReportsMissingKeyFields() {
-        assertThat(lotValidationService.findMissingKeyFields(LotTestFixtures.incompleteCreateLotRequest()))
+        assertThat(
+                        lotValidationService.findMissingKeyFields(
+                                LotTestFixtures.incompleteCreateLotRequest()))
                 .containsExactlyInAnyOrder(
                         "budgetAmount",
                         "deliveryDeadline",

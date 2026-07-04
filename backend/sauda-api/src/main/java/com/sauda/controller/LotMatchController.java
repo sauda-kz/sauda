@@ -70,8 +70,7 @@ public class LotMatchController {
             @RequestParam(required = false) LotMatchStatus status,
             @RequestParam(defaultValue = "false") boolean includeUnsent,
             @PageableDefault(size = 20) Pageable pageable) {
-        return lotMatchService.listForDistributor(
-                distributorId, status, includeUnsent, pageable);
+        return lotMatchService.listForDistributor(distributorId, status, includeUnsent, pageable);
     }
 
     @Operation(summary = "Get lot match card for distributor")

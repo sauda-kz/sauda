@@ -68,8 +68,7 @@ public class LotMatchSuggestionService {
                         .map(offer -> toPotentialMatch(lot, offer))
                         .filter(
                                 suggestion ->
-                                        suggestion.confidenceScore()
-                                                        .compareTo(MIN_CONFIDENCE_SCORE)
+                                        suggestion.confidenceScore().compareTo(MIN_CONFIDENCE_SCORE)
                                                 >= 0)
                         .sorted(
                                 Comparator.comparing(PotentialMatchResponse::confidenceScore)

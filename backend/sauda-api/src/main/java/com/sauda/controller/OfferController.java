@@ -43,8 +43,7 @@ public class OfferController {
             @RequestParam(defaultValue = "true") boolean activeOnly,
             @PageableDefault(size = 20) Pageable pageable) {
         return offerService.search(
-                new OfferSearchCriteria(
-                        distributorId, category, brand, q, stockStatus, activeOnly),
+                new OfferSearchCriteria(distributorId, category, brand, q, stockStatus, activeOnly),
                 pageable);
     }
 

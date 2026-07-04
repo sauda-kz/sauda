@@ -180,10 +180,7 @@ public class LotMatchService {
 
     @Transactional(readOnly = true)
     public Page<DistributorLotMatchCardResponse> listForDistributor(
-            UUID distributorId,
-            LotMatchStatus status,
-            boolean includeUnsent,
-            Pageable pageable) {
+            UUID distributorId, LotMatchStatus status, boolean includeUnsent, Pageable pageable) {
         UUID resolvedDistributorId = tenantAccessService.resolveDistributorId(distributorId);
         assertDistributorOrg(resolvedDistributorId);
 

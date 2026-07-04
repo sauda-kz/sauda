@@ -73,9 +73,7 @@ class LotServiceTest {
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(creator));
 
         try (var securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils
-                    .when(SecurityUtils::requirePrincipal)
-                    .thenReturn(samplePrincipal(userId));
+            securityUtils.when(SecurityUtils::requirePrincipal).thenReturn(samplePrincipal(userId));
 
             var response = lotService.createLot(LotTestFixtures.sampleCreateLotRequest());
 
@@ -89,8 +87,7 @@ class LotServiceTest {
 
     @Test
     void createIncompleteLotWithoutConfirmationThrows() {
-        assertThatThrownBy(
-                        () -> lotService.createLot(LotTestFixtures.incompleteCreateLotRequest()))
+        assertThatThrownBy(() -> lotService.createLot(LotTestFixtures.incompleteCreateLotRequest()))
                 .isInstanceOf(SaudaIncompleteLotException.class)
                 .satisfies(
                         ex -> {
@@ -144,9 +141,7 @@ class LotServiceTest {
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(creator));
 
         try (var securityUtils = mockStatic(SecurityUtils.class)) {
-            securityUtils
-                    .when(SecurityUtils::requirePrincipal)
-                    .thenReturn(samplePrincipal(userId));
+            securityUtils.when(SecurityUtils::requirePrincipal).thenReturn(samplePrincipal(userId));
 
             var response = lotService.createLot(request);
 

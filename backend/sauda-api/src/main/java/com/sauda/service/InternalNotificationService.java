@@ -15,7 +15,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Read-side API for a user's own in-app notifications. Creation is handled by notification channels. */
+/**
+ * Read-side API for a user's own in-app notifications. Creation is handled by notification
+ * channels.
+ */
 @Slf4j
 @Service
 public class InternalNotificationService {
@@ -36,8 +39,8 @@ public class InternalNotificationService {
         UUID userId = SecurityUtils.requirePrincipal().id();
         Page<InternalNotification> page =
                 status != null
-                        ? internalNotificationRepository
-                                .findByUserIdAndStatusOrderByCreatedAtDesc(userId, status, pageable)
+                        ? internalNotificationRepository.findByUserIdAndStatusOrderByCreatedAtDesc(
+                                userId, status, pageable)
                         : internalNotificationRepository.findByUserIdOrderByCreatedAtDesc(
                                 userId, pageable);
         return page.map(internalNotificationMapper::toResponse);
