@@ -44,6 +44,8 @@ sauda:
     bucket: ${S3_BUCKET:sauda-raw}
     region: ${S3_REGION:us-east-1}
     max-file-size-bytes: ${RAW_UPLOAD_MAX_BYTES:52428800}
+  imports:
+    max-rows: ${IMPORT_MAX_ROWS:100000}
 
 server:
   port: ${SERVER_PORT:8080}
