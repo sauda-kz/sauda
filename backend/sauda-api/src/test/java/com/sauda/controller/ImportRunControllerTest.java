@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -16,6 +17,8 @@ import com.sauda.exception.GlobalExceptionHandler;
 import com.sauda.exception.SaudaNotFoundException;
 import com.sauda.repository.AppUserRepository;
 import com.sauda.service.imports.ImportRunQueryService;
+import com.sauda.service.imports.ImportRunService;
+import com.sauda.service.imports.ParsedRowService;
 import com.sauda.testsupport.WebMvcSecurityTestConfig;
 import java.time.Instant;
 import java.util.List;
@@ -27,6 +30,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -43,6 +47,8 @@ class ImportRunControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private ImportRunQueryService importRunQueryService;
+    @MockitoBean private ParsedRowService parsedRowService;
+    @MockitoBean private ImportRunService importRunService;
     @MockitoBean private AppUserRepository appUserRepository;
 
     @Test
@@ -158,6 +164,92 @@ class ImportRunControllerTest {
         UUID distributorId = UUID.randomUUID();
 
         mockMvc.perform(get("/api/v1/distributors/{distributorId}/import-runs", distributorId))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(authorities = "import:approve")
+    void approveRunReturnsApprovedStatus() throws Exception {
+        UUID distributorId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+
+        when(importRunService.approveRun(distributorId, runId))
+                .thenReturn(
+                        new ImportRunResponse(
+                                runId,
+                                UUID.randomUUID(),
+                                "prices.csv",
+                                distributorId,
+                                "csv_v1",
+                                ImportStatus.approved,
+                                10,
+                                10,
+                                1,
+                                Instant.parse("2026-07-01T10:00:00Z"),
+                                Instant.parse("2026-07-01T10:01:00Z"),
+                                Instant.parse("2026-07-01T11:00:00Z"),
+                                null,
+                                Instant.parse("2026-07-01T10:00:00Z"),
+                                Instant.parse("2026-07-01T11:00:00Z")));
+
+        mockMvc.perform(
+                        post(
+                                "/api/v1/distributors/{distributorId}/import-runs/{runId}/approve",
+                                distributorId,
+                                runId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("approved"))
+                .andExpect(jsonPath("$.approvedAt").exists());
+    }
+
+    @Test
+    @WithMockUser(authorities = "import:approve")
+    void rejectRunReturnsRejectedStatus() throws Exception {
+        UUID distributorId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+
+        when(importRunService.rejectRun(distributorId, runId, "Wrong mapping"))
+                .thenReturn(
+                        new ImportRunResponse(
+                                runId,
+                                UUID.randomUUID(),
+                                "prices.csv",
+                                distributorId,
+                                "csv_v1",
+                                ImportStatus.rejected,
+                                10,
+                                10,
+                                2,
+                                Instant.parse("2026-07-01T10:00:00Z"),
+                                Instant.parse("2026-07-01T10:01:00Z"),
+                                null,
+                                Instant.parse("2026-07-01T11:00:00Z"),
+                                Instant.parse("2026-07-01T10:00:00Z"),
+                                Instant.parse("2026-07-01T11:00:00Z")));
+
+        mockMvc.perform(
+                        post(
+                                        "/api/v1/distributors/{distributorId}/import-runs/{runId}/reject",
+                                        distributorId,
+                                        runId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"reason\":\"Wrong mapping\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("rejected"))
+                .andExpect(jsonPath("$.rejectedAt").exists());
+    }
+
+    @Test
+    @WithMockUser(authorities = "import:read")
+    void approveRunForbiddenWithoutApprovePermission() throws Exception {
+        UUID distributorId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+
+        mockMvc.perform(
+                        post(
+                                "/api/v1/distributors/{distributorId}/import-runs/{runId}/approve",
+                                distributorId,
+                                runId))
                 .andExpect(status().isForbidden());
     }
 

@@ -18,9 +18,15 @@ public final class ImportRunStatusTransitions {
                             ImportStatus.parsed_with_errors,
                             ImportStatus.failed),
                     ImportStatus.parsed,
-                    EnumSet.of(ImportStatus.awaiting_approval),
+                    EnumSet.of(
+                            ImportStatus.awaiting_approval,
+                            ImportStatus.approved,
+                            ImportStatus.rejected),
                     ImportStatus.parsed_with_errors,
-                    EnumSet.of(ImportStatus.awaiting_approval),
+                    EnumSet.of(
+                            ImportStatus.awaiting_approval,
+                            ImportStatus.approved,
+                            ImportStatus.rejected),
                     ImportStatus.awaiting_approval,
                     EnumSet.of(ImportStatus.approved, ImportStatus.rejected),
                     ImportStatus.approved,

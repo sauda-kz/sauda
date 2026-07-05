@@ -6,27 +6,36 @@ import com.sauda.domain.entity.ImportRun;
 import com.sauda.domain.entity.ParsedRow;
 import com.sauda.domain.entity.RawUpload;
 import com.sauda.domain.enums.ImportStatus;
+import com.sauda.domain.enums.OrganizationType;
 import com.sauda.domain.enums.ParsedRowStatus;
 import com.sauda.domain.enums.RawUploadStatus;
+import com.sauda.dto.imports.ImportRunResponse;
 import com.sauda.exception.SaudaException;
 import com.sauda.exception.SaudaNotFoundException;
 import com.sauda.integration.storage.StoredObject;
 import com.sauda.integration.storage.upload.StoredFileUploadService;
+import com.sauda.repository.AppUserRepository;
 import com.sauda.repository.ImportErrorRepository;
 import com.sauda.repository.ImportRunRepository;
+import com.sauda.repository.OrganizationRepository;
 import com.sauda.repository.ParsedRowRepository;
 import com.sauda.repository.RawUploadRepository;
+import com.sauda.security.principal.SecurityUtils;
+import com.sauda.service.TenantAccessService;
 import com.sauda.service.imports.adapter.ImportAdapter;
 import com.sauda.service.imports.adapter.ImportAdapterRegistry;
 import com.sauda.service.imports.adapter.ImportSource;
+import com.sauda.service.imports.event.ImportApprovedEvent;
 import com.sauda.service.imports.model.AdapterParseResult;
 import com.sauda.service.imports.model.AdapterParsedRow;
 import com.sauda.service.imports.model.RowError;
+import com.sauda.service.mapper.ImportRunMapper;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,28 +47,43 @@ public class ImportRunService {
     private final ParsedRowRepository parsedRowRepository;
     private final ImportErrorRepository importErrorRepository;
     private final RawUploadRepository rawUploadRepository;
+    private final OrganizationRepository organizationRepository;
+    private final AppUserRepository appUserRepository;
     private final StoredFileUploadService storedFileUploadService;
     private final ImportAdapterRegistry importAdapterRegistry;
     private final ParsedRowValidator parsedRowValidator;
     private final ImportProperties importProperties;
+    private final TenantAccessService tenantAccessService;
+    private final ImportRunMapper importRunMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ImportRunService(
             ImportRunRepository importRunRepository,
             ParsedRowRepository parsedRowRepository,
             ImportErrorRepository importErrorRepository,
             RawUploadRepository rawUploadRepository,
+            OrganizationRepository organizationRepository,
+            AppUserRepository appUserRepository,
             StoredFileUploadService storedFileUploadService,
             ImportAdapterRegistry importAdapterRegistry,
             ParsedRowValidator parsedRowValidator,
-            ImportProperties importProperties) {
+            ImportProperties importProperties,
+            TenantAccessService tenantAccessService,
+            ImportRunMapper importRunMapper,
+            ApplicationEventPublisher eventPublisher) {
         this.importRunRepository = importRunRepository;
         this.parsedRowRepository = parsedRowRepository;
         this.importErrorRepository = importErrorRepository;
         this.rawUploadRepository = rawUploadRepository;
+        this.organizationRepository = organizationRepository;
+        this.appUserRepository = appUserRepository;
         this.storedFileUploadService = storedFileUploadService;
         this.importAdapterRegistry = importAdapterRegistry;
         this.parsedRowValidator = parsedRowValidator;
         this.importProperties = importProperties;
+        this.tenantAccessService = tenantAccessService;
+        this.importRunMapper = importRunMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -152,6 +176,57 @@ public class ImportRunService {
         }
     }
 
+    @Transactional
+    public ImportRunResponse approveRun(UUID distributorId, UUID runId) {
+        ImportRun importRun = findRunForTenantOrThrow(distributorId, runId);
+        ImportRunStatusTransitions.assertTransition(importRun.getStatus(), ImportStatus.approved);
+        assertHasApplicableRows(importRun);
+
+        UUID approverId = SecurityUtils.requirePrincipal().id();
+        importRun.setApprovedBy(appUserRepository.getReferenceById(approverId));
+        importRun.setApprovedAt(Instant.now());
+        importRun.setStatus(ImportStatus.approved);
+
+        ImportRun saved = importRunRepository.save(importRun);
+        eventPublisher.publishEvent(new ImportApprovedEvent(saved.getId()));
+
+        log.info(
+                "Import run approved: runId={}, distributorId={}, userId={}",
+                saved.getId(),
+                saved.getDistributor().getId(),
+                approverId);
+        return importRunMapper.toResponse(saved);
+    }
+
+    @Transactional
+    public ImportRunResponse rejectRun(UUID distributorId, UUID runId, String reason) {
+        ImportRun importRun = findRunForTenantOrThrow(distributorId, runId);
+        ImportRunStatusTransitions.assertTransition(importRun.getStatus(), ImportStatus.rejected);
+
+        UUID rejecterId = SecurityUtils.requirePrincipal().id();
+        importRun.setRejectedBy(appUserRepository.getReferenceById(rejecterId));
+        importRun.setRejectedAt(Instant.now());
+        importRun.setStatus(ImportStatus.rejected);
+
+        ImportRun saved = importRunRepository.save(importRun);
+
+        if (reason == null || reason.isBlank()) {
+            log.info(
+                    "Import run rejected: runId={}, distributorId={}, userId={}",
+                    saved.getId(),
+                    saved.getDistributor().getId(),
+                    rejecterId);
+        } else {
+            log.info(
+                    "Import run rejected: runId={}, distributorId={}, userId={}, reason={}",
+                    saved.getId(),
+                    saved.getDistributor().getId(),
+                    rejecterId,
+                    reason);
+        }
+        return importRunMapper.toResponse(saved);
+    }
+
     @SuppressWarnings("unused")
     private void reprocess(UUID importRunId) {
         // Reserved for future re-run support (out of scope for SAUDA-008 step 04).
@@ -211,6 +286,31 @@ public class ImportRunService {
                 .map(RowError::message)
                 .findFirst()
                 .orElse("Import file could not be processed");
+    }
+
+    private ImportRun findRunForTenantOrThrow(UUID distributorId, UUID runId) {
+        UUID resolvedDistributorId = tenantAccessService.resolveDistributorId(distributorId);
+        assertDistributorOrg(resolvedDistributorId);
+        return importRunRepository
+                .findByIdAndDistributorId(runId, resolvedDistributorId)
+                .orElseThrow(() -> new SaudaNotFoundException("Import run not found: " + runId));
+    }
+
+    private void assertDistributorOrg(UUID distributorId) {
+        if (!organizationRepository.existsByIdAndType(
+                distributorId, OrganizationType.distributor)) {
+            throw new SaudaNotFoundException("Distributor not found: " + distributorId);
+        }
+    }
+
+    private void assertHasApplicableRows(ImportRun importRun) {
+        UUID runId = importRun.getId();
+        long totalRows = parsedRowRepository.countByImportRunId(runId);
+        long errorRows =
+                parsedRowRepository.countByImportRunIdAndStatus(runId, ParsedRowStatus.error);
+        if (totalRows == 0 || errorRows == totalRows) {
+            throw new SaudaException("Import has no rows that can be applied");
+        }
     }
 
     private void failRun(ImportRun importRun, String reason, Exception exception) {

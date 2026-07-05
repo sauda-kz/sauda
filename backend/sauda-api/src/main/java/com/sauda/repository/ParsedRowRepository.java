@@ -22,5 +22,7 @@ public interface ParsedRowRepository extends JpaRepository<ParsedRow, UUID> {
 
     Optional<ParsedRow> findByIdAndImportRunId(UUID id, UUID importRunId);
 
+    long countByImportRunId(UUID importRunId);
+
     long countByImportRunIdAndStatus(UUID importRunId, ParsedRowStatus status);
 }

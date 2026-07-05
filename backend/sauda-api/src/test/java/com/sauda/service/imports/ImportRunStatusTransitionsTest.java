@@ -22,6 +22,16 @@ class ImportRunStatusTransitionsTest {
     }
 
     @Test
+    void allowsApproveFromParsedStatuses() {
+        assertThat(ImportRunStatusTransitions.isAllowed(ImportStatus.parsed, ImportStatus.approved))
+                .isTrue();
+        assertThat(
+                        ImportRunStatusTransitions.isAllowed(
+                                ImportStatus.parsed_with_errors, ImportStatus.rejected))
+                .isTrue();
+    }
+
+    @Test
     void rejectsInvalidTransition() {
         assertThatThrownBy(
                         () ->

@@ -23,6 +23,7 @@ import com.sauda.repository.ImportErrorRepository;
 import com.sauda.repository.ImportRunRepository;
 import com.sauda.repository.ParsedRowRepository;
 import com.sauda.repository.RawUploadRepository;
+import com.sauda.service.TenantAccessService;
 import com.sauda.service.imports.adapter.ImportAdapter;
 import com.sauda.service.imports.adapter.ImportAdapterRegistry;
 import com.sauda.service.imports.adapter.ImportSource;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ImportRunServiceTest {
@@ -52,6 +54,8 @@ class ImportRunServiceTest {
     @Mock private StoredFileUploadService storedFileUploadService;
     @Mock private ImportAdapterRegistry importAdapterRegistry;
     @Mock private ImportAdapter importAdapter;
+    @Mock private TenantAccessService tenantAccessService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private ImportRunService importRunService;
 
@@ -69,10 +73,15 @@ class ImportRunServiceTest {
                         parsedRowRepository,
                         importErrorRepository,
                         rawUploadRepository,
+                        null,
+                        null,
                         storedFileUploadService,
                         importAdapterRegistry,
                         new ParsedRowValidator(),
-                        new ImportProperties(100, null, 2, 4, 50, 2));
+                        new ImportProperties(100, null, 2, 4, 50, 2),
+                        tenantAccessService,
+                        null,
+                        eventPublisher);
 
         rawUploadId = UUID.randomUUID();
         importRunId = UUID.randomUUID();

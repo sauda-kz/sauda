@@ -4,8 +4,10 @@ import com.sauda.common.ApiConstants;
 import com.sauda.domain.enums.ParsedRowStatus;
 import com.sauda.dto.imports.ImportRunResponse;
 import com.sauda.dto.imports.ParsedRowResponse;
+import com.sauda.dto.imports.RejectImportRequest;
 import com.sauda.dto.imports.UpdateParsedRowRequest;
 import com.sauda.service.imports.ImportRunQueryService;
+import com.sauda.service.imports.ImportRunService;
 import com.sauda.service.imports.ParsedRowService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -19,6 +21,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,11 +35,15 @@ public class ImportRunController {
 
     private final ImportRunQueryService importRunQueryService;
     private final ParsedRowService parsedRowService;
+    private final ImportRunService importRunService;
 
     public ImportRunController(
-            ImportRunQueryService importRunQueryService, ParsedRowService parsedRowService) {
+            ImportRunQueryService importRunQueryService,
+            ParsedRowService parsedRowService,
+            ImportRunService importRunService) {
         this.importRunQueryService = importRunQueryService;
         this.parsedRowService = parsedRowService;
+        this.importRunService = importRunService;
     }
 
     @Operation(summary = "List import runs for distributor")
@@ -74,5 +81,24 @@ public class ImportRunController {
             @PathVariable UUID rowId,
             @Valid @RequestBody UpdateParsedRowRequest request) {
         return parsedRowService.editRow(distributorId, runId, rowId, request);
+    }
+
+    @Operation(summary = "Approve import run")
+    @PostMapping("/distributors/{distributorId}/import-runs/{runId}/approve")
+    @PreAuthorize("hasAuthority('import:approve')")
+    public ImportRunResponse approveRun(
+            @PathVariable UUID distributorId, @PathVariable UUID runId) {
+        return importRunService.approveRun(distributorId, runId);
+    }
+
+    @Operation(summary = "Reject import run")
+    @PostMapping("/distributors/{distributorId}/import-runs/{runId}/reject")
+    @PreAuthorize("hasAuthority('import:approve')")
+    public ImportRunResponse rejectRun(
+            @PathVariable UUID distributorId,
+            @PathVariable UUID runId,
+            @Valid @RequestBody(required = false) RejectImportRequest request) {
+        String reason = request == null ? null : request.reason();
+        return importRunService.rejectRun(distributorId, runId, reason);
     }
 }
