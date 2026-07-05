@@ -7,6 +7,17 @@ export function useDistributorPermissions() {
   const isViewer = roles.includes("distributor_viewer");
   const canManageMatches = isManager;
   const canReadNotifications = isManager;
+  const canReadImports = isManager || isViewer;
+  const canRunImport = isManager;
+  const canApproveImport = isManager;
 
-  return { isManager, isViewer, canManageMatches, canReadNotifications };
+  return {
+    isManager,
+    isViewer,
+    canManageMatches,
+    canReadNotifications,
+    canReadImports,
+    canRunImport,
+    canApproveImport,
+  };
 }

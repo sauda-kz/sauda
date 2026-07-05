@@ -64,3 +64,16 @@ export function formatPriceListUpdatedAt(iso: string | null | undefined): string
 
   return isToday ? `Сегодня · ${datePart} · ${timePart}` : `${datePart} · ${timePart}`;
 }
+
+export function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
