@@ -14,6 +14,7 @@ import com.sauda.dto.imports.ImportRunResponse;
 import com.sauda.dto.imports.ParsedRowErrorItem;
 import com.sauda.dto.imports.ParsedRowResponse;
 import com.sauda.exception.GlobalExceptionHandler;
+import com.sauda.exception.SaudaForbiddenException;
 import com.sauda.exception.SaudaNotFoundException;
 import com.sauda.repository.AppUserRepository;
 import com.sauda.service.imports.ImportRunQueryService;
@@ -50,6 +51,30 @@ class ImportRunControllerTest {
     @MockitoBean private ParsedRowService parsedRowService;
     @MockitoBean private ImportRunService importRunService;
     @MockitoBean private AppUserRepository appUserRepository;
+
+    @Test
+    @WithMockUser(authorities = "import:read")
+    void listAllRunsReturnsGlobalPageForAdmin() throws Exception {
+        UUID distributorId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+
+        when(importRunQueryService.listAllRuns(eq(null), eq(null), any()))
+                .thenReturn(new PageImpl<>(List.of(sampleRunResponse(runId, distributorId))));
+
+        mockMvc.perform(get("/api/v1/import-runs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(runId.toString()))
+                .andExpect(jsonPath("$.content[0].distributorName").value("Tech Distributor"));
+    }
+
+    @Test
+    @WithMockUser(authorities = "import:read")
+    void listAllRunsForbiddenForNonAdmin() throws Exception {
+        when(importRunQueryService.listAllRuns(any(), any(), any()))
+                .thenThrow(new SaudaForbiddenException("Admin access required"));
+
+        mockMvc.perform(get("/api/v1/import-runs")).andExpect(status().isForbidden());
+    }
 
     @Test
     @WithMockUser(authorities = "import:read")
@@ -180,6 +205,7 @@ class ImportRunControllerTest {
                                 UUID.randomUUID(),
                                 "prices.csv",
                                 distributorId,
+                                "Tech Distributor",
                                 "csv_v1",
                                 ImportStatus.applied,
                                 10,
@@ -215,6 +241,7 @@ class ImportRunControllerTest {
                                 UUID.randomUUID(),
                                 "prices.csv",
                                 distributorId,
+                                "Tech Distributor",
                                 "csv_v1",
                                 ImportStatus.rejected,
                                 10,
@@ -259,6 +286,7 @@ class ImportRunControllerTest {
                 UUID.randomUUID(),
                 "prices.csv",
                 distributorId,
+                "Tech Distributor",
                 "csv_v1",
                 ImportStatus.awaiting_approval,
                 10,

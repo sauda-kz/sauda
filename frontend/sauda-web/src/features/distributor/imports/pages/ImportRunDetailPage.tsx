@@ -177,7 +177,9 @@ export function ImportRunDetailPage() {
               <div className="mt-4">
                 <ParsedRowsTable
                   items={rows}
-                  canEdit={canApproveImport && !["applied", "rejected", "failed"].includes(run.status)}
+                  readOnly={
+                    !canApproveImport || ["applied", "rejected", "failed"].includes(run.status)
+                  }
                   statusFilter={statusFilter}
                   onStatusFilterChange={setStatusFilter}
                   onEdit={(row) => {

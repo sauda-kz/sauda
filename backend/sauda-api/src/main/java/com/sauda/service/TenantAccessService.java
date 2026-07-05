@@ -20,6 +20,13 @@ public class TenantAccessService {
         }
     }
 
+    public void assertPlatformAdmin() {
+        SaudaPrincipal principal = SecurityUtils.requirePrincipal();
+        if (principal.organizationType() != OrganizationType.platform) {
+            throw new SaudaForbiddenException("Admin access required");
+        }
+    }
+
     public UUID resolveDistributorId(UUID requestedDistributorId) {
         SaudaPrincipal principal = SecurityUtils.requirePrincipal();
         if (principal.organizationType() == OrganizationType.distributor) {

@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 public interface ImportRunMapper {
 
     @Mapping(source = "distributor.id", target = "distributorId")
+    @Mapping(source = "distributor.name", target = "distributorName")
     @Mapping(source = "rawUpload.id", target = "rawUploadId")
     @Mapping(source = "rawUpload.originalFilename", target = "originalFilename")
     ImportRunResponse toResponse(ImportRun importRun);

@@ -14,8 +14,8 @@ import {
 
 interface ParsedRowsTableProps {
   items: ParsedRowResponse[];
-  canEdit: boolean;
-  onEdit: (row: ParsedRowResponse) => void;
+  readOnly?: boolean;
+  onEdit?: (row: ParsedRowResponse) => void;
   statusFilter: ParsedRowStatus | "";
   onStatusFilterChange: (value: ParsedRowStatus | "") => void;
 }
@@ -32,11 +32,12 @@ const rowStatusTone: Record<
 
 export function ParsedRowsTable({
   items,
-  canEdit,
+  readOnly = false,
   onEdit,
   statusFilter,
   onStatusFilterChange,
 }: ParsedRowsTableProps) {
+  const showEdit = !readOnly && onEdit != null;
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
@@ -71,7 +72,7 @@ export function ParsedRowsTable({
               <th className="px-3 py-3">Остаток</th>
               <th className="px-3 py-3">Статус</th>
               <th className="px-3 py-3">Замечания</th>
-              {canEdit && <th className="px-3 py-3" />}
+              {showEdit && <th className="px-3 py-3" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -118,7 +119,7 @@ export function ParsedRowsTable({
                   <td className="px-3 py-2.5">
                     <RowErrorsPopover errors={row.errors} warnings={row.warnings} />
                   </td>
-                  {canEdit && (
+                  {showEdit && (
                     <td className="px-3 py-2.5">
                       <button
                         type="button"

@@ -1,6 +1,7 @@
 package com.sauda.controller;
 
 import com.sauda.common.ApiConstants;
+import com.sauda.domain.enums.ImportStatus;
 import com.sauda.domain.enums.ParsedRowStatus;
 import com.sauda.dto.imports.ImportRunResponse;
 import com.sauda.dto.imports.ParsedRowResponse;
@@ -44,6 +45,16 @@ public class ImportRunController {
         this.importRunQueryService = importRunQueryService;
         this.parsedRowService = parsedRowService;
         this.importRunService = importRunService;
+    }
+
+    @Operation(summary = "List import runs across all distributors (admin)")
+    @GetMapping("/import-runs")
+    @PreAuthorize("hasAuthority('import:read')")
+    public Page<ImportRunResponse> listAllRuns(
+            @RequestParam(required = false) UUID distributorId,
+            @RequestParam(required = false) ImportStatus status,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return importRunQueryService.listAllRuns(distributorId, status, pageable);
     }
 
     @Operation(summary = "List import runs for distributor")

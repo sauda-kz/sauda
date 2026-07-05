@@ -31,6 +31,7 @@ class ImportRunMapperTest {
         Organization distributor = new Organization();
         distributor.setId(distributorId);
         distributor.setType(OrganizationType.distributor);
+        distributor.setName("Tech Distributor");
 
         RawUpload rawUpload = new RawUpload();
         rawUpload.setId(rawUploadId);
@@ -54,6 +55,7 @@ class ImportRunMapperTest {
 
         assertThat(response.id()).isEqualTo(runId);
         assertThat(response.distributorId()).isEqualTo(distributorId);
+        assertThat(response.distributorName()).isEqualTo("Tech Distributor");
         assertThat(response.rawUploadId()).isEqualTo(rawUploadId);
         assertThat(response.originalFilename()).isEqualTo("prices.csv");
         assertThat(response.adapterKey()).isEqualTo("csv_v1");

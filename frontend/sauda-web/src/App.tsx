@@ -4,6 +4,8 @@ import { AdminRoute, DistributorRoute, ProtectedRoute } from "./auth/ProtectedRo
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { DistributorLayout } from "./components/layout/DistributorLayout";
 import { LotCreatePage } from "./features/admin/lots/pages/LotCreatePage";
+import { AdminImportRunDetailPage } from "./features/admin/imports/pages/AdminImportRunDetailPage";
+import { AdminImportRunsListPage } from "./features/admin/imports/pages/AdminImportRunsListPage";
 import { LotDetailPage } from "./features/admin/lots/pages/LotDetailPage";
 import { LotEditPage } from "./features/admin/lots/pages/LotEditPage";
 import { LotsListPage } from "./features/admin/lots/pages/LotsListPage";
@@ -29,6 +31,11 @@ export default function App() {
                 <Route path="/admin/lots/new" element={<LotCreatePage />} />
                 <Route path="/admin/lots/:id" element={<LotDetailPage />} />
                 <Route path="/admin/lots/:id/edit" element={<LotEditPage />} />
+                <Route path="/admin/imports" element={<AdminImportRunsListPage />} />
+                <Route
+                  path="/admin/imports/:distributorId/:runId"
+                  element={<AdminImportRunDetailPage />}
+                />
               </Route>
             </Route>
 

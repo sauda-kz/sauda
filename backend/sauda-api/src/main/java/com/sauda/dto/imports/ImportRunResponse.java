@@ -9,6 +9,7 @@ public record ImportRunResponse(
         UUID rawUploadId,
         String originalFilename,
         UUID distributorId,
+        String distributorName,
         String adapterKey,
         ImportStatus status,
         int totalRows,

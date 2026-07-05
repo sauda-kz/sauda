@@ -25,6 +25,7 @@ export interface ImportRunResponse {
   rawUploadId: string;
   originalFilename: string;
   distributorId: string;
+  distributorName: string | null;
   adapterKey: string | null;
   status: ImportStatus;
   totalRows: number;

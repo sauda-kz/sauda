@@ -2,12 +2,14 @@ package com.sauda.service.imports;
 
 import com.sauda.domain.entity.ImportRun;
 import com.sauda.domain.entity.ParsedRow;
+import com.sauda.domain.enums.ImportStatus;
 import com.sauda.domain.enums.OrganizationType;
 import com.sauda.domain.enums.ParsedRowStatus;
 import com.sauda.dto.imports.ImportRunResponse;
 import com.sauda.dto.imports.ParsedRowResponse;
 import com.sauda.exception.SaudaNotFoundException;
 import com.sauda.repository.ImportRunRepository;
+import com.sauda.repository.ImportRunSpecifications;
 import com.sauda.repository.OrganizationRepository;
 import com.sauda.repository.ParsedRowRepository;
 import com.sauda.service.TenantAccessService;
@@ -42,6 +44,17 @@ public class ImportRunQueryService {
         this.tenantAccessService = tenantAccessService;
         this.importRunMapper = importRunMapper;
         this.parsedRowMapper = parsedRowMapper;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ImportRunResponse> listAllRuns(
+            UUID distributorId, ImportStatus statusFilter, Pageable pageable) {
+        tenantAccessService.assertPlatformAdmin();
+        return importRunRepository
+                .findAll(
+                        ImportRunSpecifications.withAdminFilters(distributorId, statusFilter),
+                        pageable)
+                .map(importRunMapper::toResponse);
     }
 
     @Transactional(readOnly = true)

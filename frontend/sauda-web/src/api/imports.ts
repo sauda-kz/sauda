@@ -2,6 +2,7 @@ import { API_BASE, ApiError, apiRequest } from "./client";
 import type {
   ImportRunPage,
   ImportRunResponse,
+  ImportStatus,
   ParsedRowPage,
   ParsedRowResponse,
   ParsedRowStatus,
@@ -11,11 +12,17 @@ import type {
 } from "../features/distributor/imports/types";
 import type { ApiErrorBody } from "../types/api";
 
-function buildPageQuery(params?: { page?: number; size?: number; status?: ParsedRowStatus }) {
+function buildPageQuery(params?: {
+  page?: number;
+  size?: number;
+  status?: ParsedRowStatus | ImportStatus;
+  distributorId?: string;
+}) {
   const search = new URLSearchParams();
   if (params?.page !== undefined) search.set("page", String(params.page));
   if (params?.size !== undefined) search.set("size", String(params.size));
   if (params?.status) search.set("status", params.status);
+  if (params?.distributorId) search.set("distributorId", params.distributorId);
   const query = search.toString();
   return query ? `?${query}` : "";
 }
@@ -47,6 +54,13 @@ export async function uploadRawFile(
   }
 
   return parsed as RawUploadResponse;
+}
+
+export function listAdminImportRuns(
+  token: string,
+  params?: { page?: number; size?: number; distributorId?: string; status?: ImportStatus },
+) {
+  return apiRequest<ImportRunPage>(`/import-runs${buildPageQuery(params)}`, { token });
 }
 
 export function listImportRuns(
