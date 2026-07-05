@@ -5,47 +5,55 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sauda.domain.enums.ImportStatus;
 import com.sauda.exception.SaudaException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ImportRunStatusTransitionsTest {
 
-    @Test
-    void allowsExpectedProcessingFlow() {
-        assertThat(ImportRunStatusTransitions.isAllowed(ImportStatus.pending, ImportStatus.processing))
-                .isTrue();
-        assertThat(ImportRunStatusTransitions.isAllowed(ImportStatus.processing, ImportStatus.parsed))
-                .isTrue();
-        assertThat(
-                        ImportRunStatusTransitions.isAllowed(
-                                ImportStatus.parsed, ImportStatus.awaiting_approval))
-                .isTrue();
+    @ParameterizedTest
+    @MethodSource("allowedTransitions")
+    void allowsTransition(ImportStatus from, ImportStatus to) {
+        ImportRunStatusTransitions.assertTransition(from, to);
+        assertThat(ImportRunStatusTransitions.isAllowed(from, to)).isTrue();
     }
 
-    @Test
-    void allowsApproveFromParsedStatuses() {
-        assertThat(ImportRunStatusTransitions.isAllowed(ImportStatus.parsed, ImportStatus.approved))
-                .isTrue();
-        assertThat(
-                        ImportRunStatusTransitions.isAllowed(
-                                ImportStatus.parsed_with_errors, ImportStatus.rejected))
-                .isTrue();
-    }
-
-    @Test
-    void rejectsInvalidTransition() {
-        assertThatThrownBy(
-                        () ->
-                                ImportRunStatusTransitions.assertTransition(
-                                        ImportStatus.pending, ImportStatus.approved))
+    @ParameterizedTest
+    @MethodSource("disallowedTransitions")
+    void rejectsTransition(ImportStatus from, ImportStatus to) {
+        assertThat(ImportRunStatusTransitions.isAllowed(from, to)).isFalse();
+        assertThatThrownBy(() -> ImportRunStatusTransitions.assertTransition(from, to))
                 .isInstanceOf(SaudaException.class)
                 .hasMessageContaining("Invalid import run status transition");
     }
 
-    @Test
-    void allowsApprovedToAppliedOrFailed() {
-        assertThat(ImportRunStatusTransitions.isAllowed(ImportStatus.approved, ImportStatus.applied))
-                .isTrue();
-        assertThat(ImportRunStatusTransitions.isAllowed(ImportStatus.approved, ImportStatus.failed))
-                .isTrue();
+    private static Stream<Arguments> allowedTransitions() {
+        return Stream.of(
+                Arguments.of(ImportStatus.pending, ImportStatus.processing),
+                Arguments.of(ImportStatus.processing, ImportStatus.parsed),
+                Arguments.of(ImportStatus.processing, ImportStatus.parsed_with_errors),
+                Arguments.of(ImportStatus.processing, ImportStatus.failed),
+                Arguments.of(ImportStatus.parsed, ImportStatus.awaiting_approval),
+                Arguments.of(ImportStatus.parsed, ImportStatus.approved),
+                Arguments.of(ImportStatus.parsed, ImportStatus.rejected),
+                Arguments.of(ImportStatus.parsed_with_errors, ImportStatus.awaiting_approval),
+                Arguments.of(ImportStatus.parsed_with_errors, ImportStatus.approved),
+                Arguments.of(ImportStatus.parsed_with_errors, ImportStatus.rejected),
+                Arguments.of(ImportStatus.awaiting_approval, ImportStatus.approved),
+                Arguments.of(ImportStatus.awaiting_approval, ImportStatus.rejected),
+                Arguments.of(ImportStatus.approved, ImportStatus.applied),
+                Arguments.of(ImportStatus.approved, ImportStatus.failed));
+    }
+
+    private static Stream<Arguments> disallowedTransitions() {
+        return Stream.of(
+                Arguments.of(ImportStatus.pending, ImportStatus.approved),
+                Arguments.of(ImportStatus.pending, ImportStatus.applied),
+                Arguments.of(ImportStatus.awaiting_approval, ImportStatus.applied),
+                Arguments.of(ImportStatus.applied, ImportStatus.approved),
+                Arguments.of(ImportStatus.rejected, ImportStatus.approved),
+                Arguments.of(ImportStatus.failed, ImportStatus.processing));
     }
 }
