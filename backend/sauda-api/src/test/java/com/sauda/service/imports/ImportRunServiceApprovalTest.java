@@ -26,7 +26,6 @@ import com.sauda.repository.OrganizationRepository;
 import com.sauda.repository.ParsedRowRepository;
 import com.sauda.repository.RawUploadRepository;
 import com.sauda.service.TenantAccessService;
-import com.sauda.service.imports.event.ImportApprovedEvent;
 import com.sauda.service.mapper.ImportRunMapper;
 import com.sauda.testsupport.SecurityTestFixtures;
 import java.time.Instant;
@@ -38,10 +37,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ImportRunServiceApprovalTest {
@@ -53,7 +50,7 @@ class ImportRunServiceApprovalTest {
     @Mock private OrganizationRepository organizationRepository;
     @Mock private AppUserRepository appUserRepository;
     @Mock private TenantAccessService tenantAccessService;
-    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private OfferUpsertService offerUpsertService;
 
     private final ImportRunMapper importRunMapper = Mappers.getMapper(ImportRunMapper.class);
 
@@ -82,7 +79,7 @@ class ImportRunServiceApprovalTest {
                         new ImportProperties(100, null, 2, 4, 50, 2),
                         tenantAccessService,
                         importRunMapper,
-                        eventPublisher);
+                        offerUpsertService);
 
         distributorId = UUID.randomUUID();
         otherDistributorId = UUID.randomUUID();
@@ -124,7 +121,7 @@ class ImportRunServiceApprovalTest {
     }
 
     @Test
-    void approveRunTransitionsToApprovedAndPublishesEvent() {
+    void approveRunTransitionsToAppliedAndAppliesOffers() {
         when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
@@ -135,20 +132,26 @@ class ImportRunServiceApprovalTest {
                 .thenReturn(1L);
         when(appUserRepository.getReferenceById(userId)).thenReturn(approver);
         when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        org.mockito.Mockito.doAnswer(
+                        invocation -> {
+                            ImportRun run = invocation.getArgument(0);
+                            run.setStatus(ImportStatus.applied);
+                            return null;
+                        })
+                .when(offerUpsertService)
+                .applyImportRun(any(ImportRun.class));
 
         ImportRunResponse response = importRunService.approveRun(distributorId, runId);
 
-        assertThat(response.status()).isEqualTo(ImportStatus.approved);
+        assertThat(response.status()).isEqualTo(ImportStatus.applied);
         assertThat(response.approvedAt()).isNotNull();
 
-        ArgumentCaptor<ImportRun> runCaptor = ArgumentCaptor.forClass(ImportRun.class);
+        org.mockito.ArgumentCaptor<ImportRun> runCaptor =
+                org.mockito.ArgumentCaptor.forClass(ImportRun.class);
         verify(importRunRepository).save(runCaptor.capture());
         assertThat(runCaptor.getValue().getApprovedBy()).isSameAs(approver);
 
-        ArgumentCaptor<ImportApprovedEvent> eventCaptor =
-                ArgumentCaptor.forClass(ImportApprovedEvent.class);
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().importRunId()).isEqualTo(runId);
+        verify(offerUpsertService).applyImportRun(any(ImportRun.class));
     }
 
     @Test
@@ -166,7 +169,7 @@ class ImportRunServiceApprovalTest {
                 .isInstanceOf(SaudaException.class)
                 .hasMessage("Import has no rows that can be applied");
 
-        verify(eventPublisher, never()).publishEvent(any());
+        verify(offerUpsertService, never()).applyImportRun(any());
     }
 
     @Test
@@ -200,7 +203,7 @@ class ImportRunServiceApprovalTest {
         assertThat(response.status()).isEqualTo(ImportStatus.rejected);
         assertThat(response.rejectedAt()).isNotNull();
 
-        verify(eventPublisher, never()).publishEvent(any());
+        verify(offerUpsertService, never()).applyImportRun(any());
     }
 
     @Test

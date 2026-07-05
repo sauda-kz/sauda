@@ -4,8 +4,10 @@ import com.sauda.domain.entity.ImportRun;
 import com.sauda.domain.entity.ParsedRow;
 import com.sauda.domain.enums.ParsedRowStatus;
 import com.sauda.service.imports.model.AdapterParsedRow;
+import com.sauda.domain.enums.StockStatus;
 import com.sauda.service.imports.model.ImportRowFields;
 import com.sauda.service.imports.model.RowError;
+import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,5 +78,69 @@ final class ParsedRowEntityMapper {
         if (value != null) {
             target.put(key, value);
         }
+    }
+
+    static ImportRowFields fromParsedData(Map<String, Object> parsedData) {
+        if (parsedData == null || parsedData.isEmpty()) {
+            return new ImportRowFields(null, null, null, null, null, null, null, null, null);
+        }
+        return new ImportRowFields(
+                stringValue(parsedData.get("sku")),
+                stringValue(parsedData.get("name")),
+                stringValue(parsedData.get("brand")),
+                stringValue(parsedData.get("mpn")),
+                decimalValue(parsedData.get("price")),
+                booleanValue(parsedData.get("price_includes_vat")),
+                integerValue(parsedData.get("stock_quantity")),
+                stockStatusValue(parsedData.get("stock_status")),
+                integerValue(parsedData.get("lead_time_days")));
+    }
+
+    private static String stringValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String text = value.toString().trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private static BigDecimal decimalValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof BigDecimal decimal) {
+            return decimal;
+        }
+        if (value instanceof Number number) {
+            return BigDecimal.valueOf(number.doubleValue());
+        }
+        return new BigDecimal(value.toString());
+    }
+
+    private static Boolean booleanValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        return Boolean.parseBoolean(value.toString());
+    }
+
+    private static Integer integerValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return Integer.parseInt(value.toString());
+    }
+
+    private static StockStatus stockStatusValue(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return StockStatus.valueOf(value.toString());
     }
 }

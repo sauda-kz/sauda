@@ -25,7 +25,6 @@ import com.sauda.service.TenantAccessService;
 import com.sauda.service.imports.adapter.ImportAdapter;
 import com.sauda.service.imports.adapter.ImportAdapterRegistry;
 import com.sauda.service.imports.adapter.ImportSource;
-import com.sauda.service.imports.event.ImportApprovedEvent;
 import com.sauda.service.imports.model.AdapterParseResult;
 import com.sauda.service.imports.model.AdapterParsedRow;
 import com.sauda.service.imports.model.RowError;
@@ -35,7 +34,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,7 +53,7 @@ public class ImportRunService {
     private final ImportProperties importProperties;
     private final TenantAccessService tenantAccessService;
     private final ImportRunMapper importRunMapper;
-    private final ApplicationEventPublisher eventPublisher;
+    private final OfferUpsertService offerUpsertService;
 
     public ImportRunService(
             ImportRunRepository importRunRepository,
@@ -70,7 +68,7 @@ public class ImportRunService {
             ImportProperties importProperties,
             TenantAccessService tenantAccessService,
             ImportRunMapper importRunMapper,
-            ApplicationEventPublisher eventPublisher) {
+            OfferUpsertService offerUpsertService) {
         this.importRunRepository = importRunRepository;
         this.parsedRowRepository = parsedRowRepository;
         this.importErrorRepository = importErrorRepository;
@@ -83,7 +81,7 @@ public class ImportRunService {
         this.importProperties = importProperties;
         this.tenantAccessService = tenantAccessService;
         this.importRunMapper = importRunMapper;
-        this.eventPublisher = eventPublisher;
+        this.offerUpsertService = offerUpsertService;
     }
 
     @Transactional
@@ -188,7 +186,16 @@ public class ImportRunService {
         importRun.setStatus(ImportStatus.approved);
 
         ImportRun saved = importRunRepository.save(importRun);
-        eventPublisher.publishEvent(new ImportApprovedEvent(saved.getId()));
+        try {
+            offerUpsertService.applyImportRun(saved);
+        } catch (RuntimeException exception) {
+            log.error(
+                    "Import run apply failed: runId={}, distributorId={}",
+                    saved.getId(),
+                    saved.getDistributor().getId(),
+                    exception);
+            throw exception;
+        }
 
         log.info(
                 "Import run approved: runId={}, distributorId={}, userId={}",

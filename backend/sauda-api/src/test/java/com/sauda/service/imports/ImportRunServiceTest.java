@@ -42,7 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ImportRunServiceTest {
@@ -55,7 +54,7 @@ class ImportRunServiceTest {
     @Mock private ImportAdapterRegistry importAdapterRegistry;
     @Mock private ImportAdapter importAdapter;
     @Mock private TenantAccessService tenantAccessService;
-    @Mock private ApplicationEventPublisher eventPublisher;
+    @Mock private OfferUpsertService offerUpsertService;
 
     private ImportRunService importRunService;
 
@@ -81,7 +80,7 @@ class ImportRunServiceTest {
                         new ImportProperties(100, null, 2, 4, 50, 2),
                         tenantAccessService,
                         null,
-                        eventPublisher);
+                        offerUpsertService);
 
         rawUploadId = UUID.randomUUID();
         importRunId = UUID.randomUUID();

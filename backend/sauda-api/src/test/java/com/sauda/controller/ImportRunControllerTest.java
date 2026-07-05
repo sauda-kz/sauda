@@ -169,7 +169,7 @@ class ImportRunControllerTest {
 
     @Test
     @WithMockUser(authorities = "import:approve")
-    void approveRunReturnsApprovedStatus() throws Exception {
+    void approveRunReturnsAppliedStatus() throws Exception {
         UUID distributorId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();
 
@@ -181,7 +181,7 @@ class ImportRunControllerTest {
                                 "prices.csv",
                                 distributorId,
                                 "csv_v1",
-                                ImportStatus.approved,
+                                ImportStatus.applied,
                                 10,
                                 10,
                                 1,
@@ -198,7 +198,7 @@ class ImportRunControllerTest {
                                 distributorId,
                                 runId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("approved"))
+                .andExpect(jsonPath("$.status").value("applied"))
                 .andExpect(jsonPath("$.approvedAt").exists());
     }
 
