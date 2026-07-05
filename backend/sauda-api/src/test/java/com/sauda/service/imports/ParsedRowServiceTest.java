@@ -102,7 +102,13 @@ class ParsedRowServiceTest {
         parsedRow.setStatus(ParsedRowStatus.error);
         parsedRow.setErrors(
                 java.util.List.of(
-                        Map.of("field", "price", "code", "INVALID_NUMBER", "message", "Invalid price")));
+                        Map.of(
+                                "field",
+                                "price",
+                                "code",
+                                "INVALID_NUMBER",
+                                "message",
+                                "Invalid price")));
 
         editor = new AppUser();
         editor.setId(userId);
@@ -133,9 +139,12 @@ class ParsedRowServiceTest {
         when(parsedRowRepository.findByIdAndImportRunId(rowId, runId))
                 .thenReturn(Optional.of(parsedRow));
         when(appUserRepository.getReferenceById(userId)).thenReturn(editor);
-        when(parsedRowRepository.save(any(ParsedRow.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(parsedRowRepository.countByImportRunIdAndStatus(runId, ParsedRowStatus.error)).thenReturn(0L);
-        when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(parsedRowRepository.save(any(ParsedRow.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(parsedRowRepository.countByImportRunIdAndStatus(runId, ParsedRowStatus.error))
+                .thenReturn(0L);
+        when(importRunRepository.save(any(ImportRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = parsedRowService.editRow(distributorId, runId, rowId, request);
 
@@ -177,9 +186,12 @@ class ParsedRowServiceTest {
         when(parsedRowRepository.findByIdAndImportRunId(rowId, runId))
                 .thenReturn(Optional.of(parsedRow));
         when(appUserRepository.getReferenceById(userId)).thenReturn(editor);
-        when(parsedRowRepository.save(any(ParsedRow.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(parsedRowRepository.countByImportRunIdAndStatus(runId, ParsedRowStatus.error)).thenReturn(1L);
-        when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(parsedRowRepository.save(any(ParsedRow.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(parsedRowRepository.countByImportRunIdAndStatus(runId, ParsedRowStatus.error))
+                .thenReturn(1L);
+        when(importRunRepository.save(any(ImportRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = parsedRowService.editRow(distributorId, runId, rowId, request);
 
@@ -205,7 +217,8 @@ class ParsedRowServiceTest {
 
     @Test
     void editRowNotFoundForForeignTenant() {
-        when(tenantAccessService.resolveDistributorId(otherDistributorId)).thenReturn(distributorId);
+        when(tenantAccessService.resolveDistributorId(otherDistributorId))
+                .thenReturn(distributorId);
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
         when(importRunRepository.findByIdAndDistributorId(runId, distributorId))

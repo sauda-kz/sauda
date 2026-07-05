@@ -93,11 +93,7 @@ public class ParsedRowService {
         ParsedRowStatus status = parsedRowValidator.resolveEditedStatus(adapterRow);
 
         ParsedRowEntityMapper.applyValidationResult(
-                parsedRow,
-                mapping.fields(),
-                mapping.errors(),
-                mapping.warnings(),
-                status);
+                parsedRow, mapping.fields(), mapping.errors(), mapping.warnings(), status);
 
         UUID editorId = SecurityUtils.requirePrincipal().id();
         AppUser editor = appUserRepository.getReferenceById(editorId);

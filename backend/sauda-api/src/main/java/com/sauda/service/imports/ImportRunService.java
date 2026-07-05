@@ -120,7 +120,8 @@ public class ImportRunService {
                                                 "Import run not found: " + importRunId));
 
         try {
-            ImportRunStatusTransitions.assertTransition(importRun.getStatus(), ImportStatus.processing);
+            ImportRunStatusTransitions.assertTransition(
+                    importRun.getStatus(), ImportStatus.processing);
             importRun.setStatus(ImportStatus.processing);
             importRun.setStartedAt(Instant.now());
             importRunRepository.save(importRun);
@@ -152,7 +153,8 @@ public class ImportRunService {
             ImportRunStatusTransitions.assertTransition(ImportStatus.processing, parsedStatus);
             importRun.setStatus(parsedStatus);
 
-            ImportRunStatusTransitions.assertTransition(parsedStatus, ImportStatus.awaiting_approval);
+            ImportRunStatusTransitions.assertTransition(
+                    parsedStatus, ImportStatus.awaiting_approval);
             importRun.setStatus(ImportStatus.awaiting_approval);
             importRun.setFinishedAt(Instant.now());
             importRunRepository.save(importRun);
@@ -338,7 +340,8 @@ public class ImportRunService {
         if (exception == null) {
             log.error("Import run failed: runId={}, reason={}", importRun.getId(), reason);
         } else {
-            log.error("Import run failed: runId={}, reason={}", importRun.getId(), reason, exception);
+            log.error(
+                    "Import run failed: runId={}, reason={}", importRun.getId(), reason, exception);
         }
     }
 }

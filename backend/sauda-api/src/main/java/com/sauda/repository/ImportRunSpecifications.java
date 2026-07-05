@@ -25,8 +25,7 @@ public final class ImportRunSpecifications {
             List<Predicate> predicates = new ArrayList<>();
             if (distributorId != null) {
                 predicates.add(
-                        criteriaBuilder.equal(
-                                root.get("distributor").get("id"), distributorId));
+                        criteriaBuilder.equal(root.get("distributor").get("id"), distributorId));
             }
             if (status != null) {
                 predicates.add(criteriaBuilder.equal(root.get("status"), status));

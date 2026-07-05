@@ -39,7 +39,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(ImportRunController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@Import({WebMvcSecurityTestConfig.class, GlobalExceptionHandler.class, ImportRunControllerTest.MethodSecurityTestConfig.class})
+@Import({
+    WebMvcSecurityTestConfig.class,
+    GlobalExceptionHandler.class,
+    ImportRunControllerTest.MethodSecurityTestConfig.class
+})
 class ImportRunControllerTest {
 
     @EnableMethodSecurity

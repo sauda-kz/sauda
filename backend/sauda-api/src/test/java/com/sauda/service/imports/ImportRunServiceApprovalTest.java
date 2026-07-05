@@ -28,7 +28,6 @@ import com.sauda.repository.RawUploadRepository;
 import com.sauda.service.TenantAccessService;
 import com.sauda.service.mapper.ImportRunMapper;
 import com.sauda.testsupport.SecurityTestFixtures;
-import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -131,7 +130,8 @@ class ImportRunServiceApprovalTest {
         when(parsedRowRepository.countByImportRunIdAndStatus(runId, ParsedRowStatus.error))
                 .thenReturn(1L);
         when(appUserRepository.getReferenceById(userId)).thenReturn(approver);
-        when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(importRunRepository.save(any(ImportRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         org.mockito.Mockito.doAnswer(
                         invocation -> {
                             ImportRun run = invocation.getArgument(0);
@@ -195,7 +195,8 @@ class ImportRunServiceApprovalTest {
         when(importRunRepository.findByIdAndDistributorId(runId, distributorId))
                 .thenReturn(Optional.of(importRun));
         when(appUserRepository.getReferenceById(userId)).thenReturn(approver);
-        when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(importRunRepository.save(any(ImportRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         ImportRunResponse response =
                 importRunService.rejectRun(distributorId, runId, "Wrong format");
@@ -208,7 +209,8 @@ class ImportRunServiceApprovalTest {
 
     @Test
     void rejectRunNotFoundForForeignTenant() {
-        when(tenantAccessService.resolveDistributorId(otherDistributorId)).thenReturn(distributorId);
+        when(tenantAccessService.resolveDistributorId(otherDistributorId))
+                .thenReturn(distributorId);
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
         when(importRunRepository.findByIdAndDistributorId(runId, distributorId))

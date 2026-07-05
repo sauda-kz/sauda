@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.sauda.exception.SaudaException;
 import com.sauda.service.imports.model.AdapterParseResult;
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +17,9 @@ class ImportAdapterRegistryTest {
 
     @BeforeEach
     void setUp() {
-        registry = new ImportAdapterRegistry(List.of(new CsvImportAdapter(), new ExcelImportAdapter()));
+        registry =
+                new ImportAdapterRegistry(
+                        List.of(new CsvImportAdapter(), new ExcelImportAdapter()));
     }
 
     @Test

@@ -72,7 +72,9 @@ public class XlsxImportAdapter implements ImportAdapter {
 
             List<AdapterParsedRow> rows = new ArrayList<>();
             int dataRowIndex = 0;
-            for (int rowIndex = sheet.getFirstRowNum() + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            for (int rowIndex = sheet.getFirstRowNum() + 1;
+                    rowIndex <= sheet.getLastRowNum();
+                    rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
                 if (row == null) {
                     continue;

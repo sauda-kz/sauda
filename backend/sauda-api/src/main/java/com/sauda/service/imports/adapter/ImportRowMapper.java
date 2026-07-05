@@ -36,12 +36,14 @@ public class ImportRowMapper {
         String mpn = trimToNull(rawCells.get("mpn"));
         BigDecimal price = parsePrice(rawCells.get("price"), errors);
         Boolean priceIncludesVat =
-                parseBoolean(rawCells.get("price_includes_vat"), "price_includes_vat", errors, warnings);
+                parseBoolean(
+                        rawCells.get("price_includes_vat"), "price_includes_vat", errors, warnings);
         Integer stockQuantity =
                 parseNonNegativeInteger(rawCells.get("stock_quantity"), "stock_quantity", errors);
         StockStatus stockStatus = parseStockStatus(rawCells.get("stock_status"), errors);
         Integer leadTimeDays =
-                parseOptionalNonNegativeInteger(rawCells.get("lead_time_days"), "lead_time_days", errors);
+                parseOptionalNonNegativeInteger(
+                        rawCells.get("lead_time_days"), "lead_time_days", errors);
 
         ImportRowFields fields =
                 new ImportRowFields(
@@ -113,7 +115,8 @@ public class ImportRowMapper {
         return null;
     }
 
-    private static Integer parseNonNegativeInteger(String raw, String field, List<RowError> errors) {
+    private static Integer parseNonNegativeInteger(
+            String raw, String field, List<RowError> errors) {
         return parseInteger(raw, field, errors);
     }
 
@@ -136,7 +139,9 @@ public class ImportRowMapper {
             }
             return intValue;
         } catch (ArithmeticException | NumberFormatException exception) {
-            errors.add(new RowError(field, "INVALID_NUMBER", "Invalid number for " + field + ": " + raw));
+            errors.add(
+                    new RowError(
+                            field, "INVALID_NUMBER", "Invalid number for " + field + ": " + raw));
             return null;
         }
     }

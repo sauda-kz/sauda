@@ -25,8 +25,7 @@ class ParsedRowValidatorTest {
     @Test
     void resolvesValidRow() {
         ParsedRowStatus status =
-                parsedRowValidator.resolveStatus(
-                        parsedRow(List.of(), List.of(), sampleFields()));
+                parsedRowValidator.resolveStatus(parsedRow(List.of(), List.of(), sampleFields()));
 
         assertThat(status).isEqualTo(ParsedRowStatus.valid);
     }
@@ -62,7 +61,8 @@ class ParsedRowValidatorTest {
     @Test
     void resolveEditedStatusMarksValidRowAsEdited() {
         ParsedRowStatus status =
-                parsedRowValidator.resolveEditedStatus(parsedRow(List.of(), List.of(), sampleFields()));
+                parsedRowValidator.resolveEditedStatus(
+                        parsedRow(List.of(), List.of(), sampleFields()));
 
         assertThat(status).isEqualTo(ParsedRowStatus.edited);
     }

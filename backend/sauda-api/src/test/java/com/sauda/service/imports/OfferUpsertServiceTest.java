@@ -73,14 +73,17 @@ class OfferUpsertServiceTest {
 
     @Test
     void applyImportRunCreatesNewOfferFromValidRow() {
-        ParsedRow parsedRow = parsedRow(2, ParsedRowStatus.valid, parsedData("SKU-NEW", "New Item", true));
+        ParsedRow parsedRow =
+                parsedRow(2, ParsedRowStatus.valid, parsedData("SKU-NEW", "New Item", true));
         when(parsedRowRepository.findByImportRunIdAndStatusIn(
                         runId, List.of(ParsedRowStatus.valid, ParsedRowStatus.edited)))
                 .thenReturn(List.of(parsedRow));
         when(offerRepository.findByDistributorIdAndInternalSku(distributorId, "SKU-NEW"))
                 .thenReturn(Optional.empty());
-        when(offerRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(offerRepository.saveAll(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(importRunRepository.save(any(ImportRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         offerUpsertService.applyImportRun(importRun);
 
@@ -109,7 +112,10 @@ class OfferUpsertServiceTest {
     @Test
     void applyImportRunUpdatesExistingOfferBySku() {
         ParsedRow parsedRow =
-                parsedRow(3, ParsedRowStatus.edited, parsedData("SKU-EXISTING", "Updated Item", false));
+                parsedRow(
+                        3,
+                        ParsedRowStatus.edited,
+                        parsedData("SKU-EXISTING", "Updated Item", false));
         Offer existing = new Offer();
         existing.setId(UUID.randomUUID());
         existing.setDistributor(distributor);
@@ -122,8 +128,10 @@ class OfferUpsertServiceTest {
                 .thenReturn(List.of(parsedRow));
         when(offerRepository.findByDistributorIdAndInternalSku(distributorId, "SKU-EXISTING"))
                 .thenReturn(Optional.of(existing));
-        when(offerRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(offerRepository.saveAll(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(importRunRepository.save(any(ImportRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         offerUpsertService.applyImportRun(importRun);
 
@@ -142,7 +150,8 @@ class OfferUpsertServiceTest {
         when(parsedRowRepository.findByImportRunIdAndStatusIn(
                         runId, List.of(ParsedRowStatus.valid, ParsedRowStatus.edited)))
                 .thenReturn(List.of());
-        when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(importRunRepository.save(any(ImportRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         offerUpsertService.applyImportRun(importRun);
 
@@ -155,14 +164,17 @@ class OfferUpsertServiceTest {
 
     @Test
     void applyImportRunMapsPriceIncludesVatDirectly() {
-        ParsedRow parsedRow = parsedRow(4, ParsedRowStatus.valid, parsedData("SKU-VAT", "Item", null));
+        ParsedRow parsedRow =
+                parsedRow(4, ParsedRowStatus.valid, parsedData("SKU-VAT", "Item", null));
         when(parsedRowRepository.findByImportRunIdAndStatusIn(
                         runId, List.of(ParsedRowStatus.valid, ParsedRowStatus.edited)))
                 .thenReturn(List.of(parsedRow));
         when(offerRepository.findByDistributorIdAndInternalSku(distributorId, "SKU-VAT"))
                 .thenReturn(Optional.empty());
-        when(offerRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(offerRepository.saveAll(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(importRunRepository.save(any(ImportRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         offerUpsertService.applyImportRun(importRun);
 
@@ -173,7 +185,8 @@ class OfferUpsertServiceTest {
 
     @Test
     void applyImportRunRollsBackWhenSaveFails() {
-        ParsedRow parsedRow = parsedRow(5, ParsedRowStatus.valid, parsedData("SKU-FAIL", "Item", true));
+        ParsedRow parsedRow =
+                parsedRow(5, ParsedRowStatus.valid, parsedData("SKU-FAIL", "Item", true));
         when(parsedRowRepository.findByImportRunIdAndStatusIn(
                         runId, List.of(ParsedRowStatus.valid, ParsedRowStatus.edited)))
                 .thenReturn(List.of(parsedRow));
@@ -200,7 +213,8 @@ class OfferUpsertServiceTest {
         verify(offerRepository, never()).saveAll(anyList());
     }
 
-    private static ParsedRow parsedRow(int rowNumber, ParsedRowStatus status, Map<String, Object> parsedData) {
+    private static ParsedRow parsedRow(
+            int rowNumber, ParsedRowStatus status, Map<String, Object> parsedData) {
         ParsedRow parsedRow = new ParsedRow();
         parsedRow.setSourceRowNumber(rowNumber);
         parsedRow.setStatus(status);
@@ -209,7 +223,8 @@ class OfferUpsertServiceTest {
         return parsedRow;
     }
 
-    private static Map<String, Object> parsedData(String sku, String name, Boolean priceIncludesVat) {
+    private static Map<String, Object> parsedData(
+            String sku, String name, Boolean priceIncludesVat) {
         Map<String, Object> parsedData = new LinkedHashMap<>();
         parsedData.put("sku", sku);
         parsedData.put("name", name);

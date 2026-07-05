@@ -11,13 +11,19 @@ public enum ImportStatus {
     applied,
     failed,
 
-    /** @deprecated legacy V2 baseline value, unused by SAUDA-008. */
+    /**
+     * @deprecated legacy V2 baseline value, unused by SAUDA-008.
+     */
     @Deprecated
     running,
-    /** @deprecated legacy V2 baseline value, unused by SAUDA-008. */
+    /**
+     * @deprecated legacy V2 baseline value, unused by SAUDA-008.
+     */
     @Deprecated
     success,
-    /** @deprecated legacy V2 baseline value, unused by SAUDA-008. */
+    /**
+     * @deprecated legacy V2 baseline value, unused by SAUDA-008.
+     */
     @Deprecated
     partial
 }

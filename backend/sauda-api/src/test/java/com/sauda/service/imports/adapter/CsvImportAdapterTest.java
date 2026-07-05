@@ -21,7 +21,9 @@ class CsvImportAdapterTest {
 
     @BeforeEach
     void setUp() {
-        csvImportAdapter = new CsvImportAdapter(new ImportRowMapper(), new ImportProperties(100_000, null, 2, 4, 50, 500));
+        csvImportAdapter =
+                new CsvImportAdapter(
+                        new ImportRowMapper(), new ImportProperties(100_000, null, 2, 4, 50, 500));
     }
 
     @Test
@@ -63,13 +65,14 @@ class CsvImportAdapterTest {
         AdapterParsedRow invalidBooleanRow = result.rows().get(4);
         assertThat(invalidBooleanRow.errors())
                 .extracting(RowError::field, RowError::code)
-                .contains(org.assertj.core.groups.Tuple.tuple("price_includes_vat", "INVALID_BOOLEAN"));
+                .contains(
+                        org.assertj.core.groups.Tuple.tuple(
+                                "price_includes_vat", "INVALID_BOOLEAN"));
     }
 
     @Test
     void supportsCsvMimeAndExtension() {
-        ImportSource source =
-                new ImportSource("prices.csv", "text/csv", () -> emptyStream());
+        ImportSource source = new ImportSource("prices.csv", "text/csv", () -> emptyStream());
 
         assertThat(csvImportAdapter.supports(source)).isTrue();
         assertThat(csvImportAdapter.key()).isEqualTo("csv_v1");
@@ -87,7 +90,10 @@ class CsvImportAdapterTest {
         assertThat(result.totalRows()).isOne();
         assertThat(result.rows().getFirst().errors())
                 .containsExactly(
-                        new RowError(null, ImportAdapterSupport.MISSING_HEADER, "Header row is required"));
+                        new RowError(
+                                null,
+                                ImportAdapterSupport.MISSING_HEADER,
+                                "Header row is required"));
     }
 
     @Test
@@ -98,11 +104,14 @@ class CsvImportAdapterTest {
                         new ImportSource(
                                 "prices.csv",
                                 "text/csv",
-                                () -> new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))));
+                                () ->
+                                        new ByteArrayInputStream(
+                                                content.getBytes(StandardCharsets.UTF_8))));
 
         assertThat(result.totalRows()).isOne();
         assertThat(result.rows().getFirst().fields().sku()).isEqualTo("SKU-010");
-        assertThat(result.rows().getFirst().fields().price()).isEqualByComparingTo(new BigDecimal("100"));
+        assertThat(result.rows().getFirst().fields().price())
+                .isEqualByComparingTo(new BigDecimal("100"));
     }
 
     private static InputStream emptyStream() {

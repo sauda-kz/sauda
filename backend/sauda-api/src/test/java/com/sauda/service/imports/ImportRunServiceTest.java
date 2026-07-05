@@ -129,7 +129,8 @@ class ImportRunServiceTest {
     void processSavesParsedRowsAndMovesToAwaitingApproval() {
         when(importRunRepository.findWithDistributorById(importRunId))
                 .thenReturn(Optional.of(importRun));
-        when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(importRunRepository.save(any(ImportRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(importAdapterRegistry.resolve(any(ImportSource.class))).thenReturn(importAdapter);
         when(importAdapter.key()).thenReturn("csv_v1");
         when(importAdapter.parse(any(ImportSource.class)))
@@ -148,9 +149,14 @@ class ImportRunServiceTest {
                                         parsedAdapterRow(
                                                 3,
                                                 "SKU-002",
-                                                List.of(new RowError("price", "INVALID_NUMBER", "Invalid price")),
+                                                List.of(
+                                                        new RowError(
+                                                                "price",
+                                                                "INVALID_NUMBER",
+                                                                "Invalid price")),
                                                 List.of()))));
-        when(parsedRowRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(parsedRowRepository.saveAll(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         importRunService.process(importRunId);
 
@@ -167,8 +173,10 @@ class ImportRunServiceTest {
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<ParsedRow>> rowsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(parsedRowRepository, org.mockito.Mockito.atLeastOnce()).saveAll(rowsCaptor.capture());
-        List<ParsedRow> savedRows = rowsCaptor.getAllValues().stream().flatMap(List::stream).toList();
+        verify(parsedRowRepository, org.mockito.Mockito.atLeastOnce())
+                .saveAll(rowsCaptor.capture());
+        List<ParsedRow> savedRows =
+                rowsCaptor.getAllValues().stream().flatMap(List::stream).toList();
         assertThat(savedRows).hasSize(2);
         assertThat(savedRows.get(0).getStatus()).isEqualTo(ParsedRowStatus.needs_review);
         assertThat(savedRows.get(1).getStatus()).isEqualTo(ParsedRowStatus.error);
@@ -182,7 +190,8 @@ class ImportRunServiceTest {
     void processMarksRunFailedWhenAdapterResolutionFails() {
         when(importRunRepository.findWithDistributorById(importRunId))
                 .thenReturn(Optional.of(importRun));
-        when(importRunRepository.save(any(ImportRun.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(importRunRepository.save(any(ImportRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(importAdapterRegistry.resolve(any(ImportSource.class)))
                 .thenThrow(new SaudaException("Unsupported import format: prices.csv (text/csv)"));
         when(importErrorRepository.save(any(ImportError.class)))

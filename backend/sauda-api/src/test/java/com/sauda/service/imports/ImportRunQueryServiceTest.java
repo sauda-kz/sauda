@@ -79,7 +79,8 @@ class ImportRunQueryServiceTest {
     void getRunUsesResolvedTenantForDistributor() {
         when(tenantAccessService.resolveDistributorId(ownerDistributorId))
                 .thenReturn(ownerDistributorId);
-        when(organizationRepository.existsByIdAndType(ownerDistributorId, OrganizationType.distributor))
+        when(organizationRepository.existsByIdAndType(
+                        ownerDistributorId, OrganizationType.distributor))
                 .thenReturn(true);
         when(importRunRepository.findByIdAndDistributorId(runId, ownerDistributorId))
                 .thenReturn(Optional.of(importRun));
@@ -94,7 +95,8 @@ class ImportRunQueryServiceTest {
     void getRunNotFoundWhenRunBelongsToAnotherDistributor() {
         when(tenantAccessService.resolveDistributorId(ownerDistributorId))
                 .thenReturn(ownerDistributorId);
-        when(organizationRepository.existsByIdAndType(ownerDistributorId, OrganizationType.distributor))
+        when(organizationRepository.existsByIdAndType(
+                        ownerDistributorId, OrganizationType.distributor))
                 .thenReturn(true);
         when(importRunRepository.findByIdAndDistributorId(runId, ownerDistributorId))
                 .thenReturn(Optional.empty());
@@ -108,7 +110,8 @@ class ImportRunQueryServiceTest {
     void adminCanReadRunForRequestedDistributor() {
         when(tenantAccessService.resolveDistributorId(foreignDistributorId))
                 .thenReturn(foreignDistributorId);
-        when(organizationRepository.existsByIdAndType(foreignDistributorId, OrganizationType.distributor))
+        when(organizationRepository.existsByIdAndType(
+                        foreignDistributorId, OrganizationType.distributor))
                 .thenReturn(true);
         when(importRunRepository.findByIdAndDistributorId(runId, foreignDistributorId))
                 .thenReturn(Optional.of(importRun));
@@ -121,7 +124,9 @@ class ImportRunQueryServiceTest {
 
     @Test
     void listAllRunsRequiresPlatformAdmin() {
-        when(importRunRepository.findAll(org.mockito.ArgumentMatchers.<Specification<ImportRun>>any(), any(Pageable.class)))
+        when(importRunRepository.findAll(
+                        org.mockito.ArgumentMatchers.<Specification<ImportRun>>any(),
+                        any(Pageable.class)))
                 .thenReturn(new PageImpl<>(java.util.List.of(importRun)));
 
         importRunQueryService.listAllRuns(null, ImportStatus.awaiting_approval, Pageable.unpaged());
@@ -135,21 +140,21 @@ class ImportRunQueryServiceTest {
                 .when(tenantAccessService)
                 .assertPlatformAdmin();
 
-        assertThatThrownBy(
-                        () ->
-                                importRunQueryService.listAllRuns(
-                                        null, null, Pageable.unpaged()))
+        assertThatThrownBy(() -> importRunQueryService.listAllRuns(null, null, Pageable.unpaged()))
                 .isInstanceOf(SaudaForbiddenException.class);
 
         verify(importRunRepository, never())
-                .findAll(org.mockito.ArgumentMatchers.<Specification<ImportRun>>any(), any(Pageable.class));
+                .findAll(
+                        org.mockito.ArgumentMatchers.<Specification<ImportRun>>any(),
+                        any(Pageable.class));
     }
 
     @Test
     void listRunsScopedToResolvedDistributor() {
         when(tenantAccessService.resolveDistributorId(ownerDistributorId))
                 .thenReturn(ownerDistributorId);
-        when(organizationRepository.existsByIdAndType(ownerDistributorId, OrganizationType.distributor))
+        when(organizationRepository.existsByIdAndType(
+                        ownerDistributorId, OrganizationType.distributor))
                 .thenReturn(true);
         when(importRunRepository.findByDistributorIdOrderByCreatedAtDesc(
                         eq(ownerDistributorId), any(Pageable.class)))
@@ -159,6 +164,7 @@ class ImportRunQueryServiceTest {
 
         assertThat(page.getContent()).hasSize(1);
         verify(importRunRepository)
-                .findByDistributorIdOrderByCreatedAtDesc(eq(ownerDistributorId), any(Pageable.class));
+                .findByDistributorIdOrderByCreatedAtDesc(
+                        eq(ownerDistributorId), any(Pageable.class));
     }
 }

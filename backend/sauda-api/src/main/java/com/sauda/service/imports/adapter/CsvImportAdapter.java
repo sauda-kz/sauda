@@ -49,7 +49,8 @@ public class CsvImportAdapter implements ImportAdapter {
     public AdapterParseResult parse(ImportSource source) {
         try (InputStream inputStream = source.content().get();
                 BufferedReader reader =
-                        new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                        new BufferedReader(
+                                new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             char delimiter = resolveDelimiter(reader, source);
             reader.mark(1);
             if (reader.read() == -1) {
@@ -85,7 +86,8 @@ public class CsvImportAdapter implements ImportAdapter {
                                 "CSV import row limit exceeded: filename={}, maxRows={}",
                                 source.originalFilename(),
                                 importProperties.maxRows());
-                        return ImportAdapterSupport.rowLimitExceededResult(importProperties.maxRows());
+                        return ImportAdapterSupport.rowLimitExceededResult(
+                                importProperties.maxRows());
                     }
                     rows.add(
                             ImportAdapterSupport.toParsedRow(

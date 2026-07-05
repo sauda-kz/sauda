@@ -45,8 +45,7 @@ class ImportRowMapperTest {
 
     @Test
     void mapReportsRequiredFields() {
-        ImportRowMapper.ImportRowMappingResult result =
-                rowMapper.map(Map.of("price", "100"));
+        ImportRowMapper.ImportRowMappingResult result = rowMapper.map(Map.of("price", "100"));
 
         assertThat(result.errors())
                 .extracting(RowError::field, RowError::code)
@@ -82,7 +81,11 @@ class ImportRowMapperTest {
                                 "price_includes_vat", "maybe"));
 
         assertThat(result.errors())
-                .containsExactly(new RowError("price_includes_vat", "INVALID_BOOLEAN", "Invalid boolean value: maybe"));
+                .containsExactly(
+                        new RowError(
+                                "price_includes_vat",
+                                "INVALID_BOOLEAN",
+                                "Invalid boolean value: maybe"));
         assertThat(result.warnings()).isEmpty();
     }
 
@@ -93,7 +96,8 @@ class ImportRowMapperTest {
 
         assertThat(result.warnings())
                 .containsExactly(
-                        new RowError("price_includes_vat", "MISSING", "price_includes_vat is not set"));
+                        new RowError(
+                                "price_includes_vat", "MISSING", "price_includes_vat is not set"));
     }
 
     @Test
@@ -113,7 +117,10 @@ class ImportRowMapperTest {
 
         assertThat(result.errors())
                 .containsExactly(
-                        new RowError("stock_status", "INVALID_ENUM", "Unknown stock status: not_a_status"));
+                        new RowError(
+                                "stock_status",
+                                "INVALID_ENUM",
+                                "Unknown stock status: not_a_status"));
         assertThat(result.fields().stockStatus()).isEqualTo(StockStatus.unknown);
     }
 

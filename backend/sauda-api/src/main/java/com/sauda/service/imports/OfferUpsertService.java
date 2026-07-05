@@ -57,7 +57,8 @@ public class OfferUpsertService {
         List<Offer> pendingOffers = new ArrayList<>();
 
         for (ParsedRow parsedRow : applicableRows) {
-            ImportRowFields fields = ParsedRowEntityMapper.fromParsedData(parsedRow.getParsedData());
+            ImportRowFields fields =
+                    ParsedRowEntityMapper.fromParsedData(parsedRow.getParsedData());
             assertApplicableFields(fields, parsedRow.getSourceRowNumber());
 
             Optional<Offer> existing =
@@ -115,15 +116,11 @@ public class OfferUpsertService {
     private static void assertApplicableFields(ImportRowFields fields, Integer sourceRowNumber) {
         if (fields.sku() == null || fields.sku().isBlank()) {
             throw new SaudaException(
-                    "Parsed row "
-                            + sourceRowNumber
-                            + " cannot be applied: sku is required");
+                    "Parsed row " + sourceRowNumber + " cannot be applied: sku is required");
         }
         if (fields.name() == null || fields.name().isBlank()) {
             throw new SaudaException(
-                    "Parsed row "
-                            + sourceRowNumber
-                            + " cannot be applied: name is required");
+                    "Parsed row " + sourceRowNumber + " cannot be applied: name is required");
         }
     }
 
