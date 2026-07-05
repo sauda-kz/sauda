@@ -16,4 +16,14 @@ public class ParsedRowValidator {
         }
         return ParsedRowStatus.valid;
     }
+
+    public ParsedRowStatus resolveEditedStatus(AdapterParsedRow row) {
+        if (!row.errors().isEmpty()) {
+            return ParsedRowStatus.error;
+        }
+        if (!row.warnings().isEmpty()) {
+            return ParsedRowStatus.needs_review;
+        }
+        return ParsedRowStatus.edited;
+    }
 }

@@ -59,6 +59,26 @@ class ParsedRowValidatorTest {
         assertThat(status).isEqualTo(ParsedRowStatus.needs_review);
     }
 
+    @Test
+    void resolveEditedStatusMarksValidRowAsEdited() {
+        ParsedRowStatus status =
+                parsedRowValidator.resolveEditedStatus(parsedRow(List.of(), List.of(), sampleFields()));
+
+        assertThat(status).isEqualTo(ParsedRowStatus.edited);
+    }
+
+    @Test
+    void resolveEditedStatusKeepsErrorWhenValidationFails() {
+        ParsedRowStatus status =
+                parsedRowValidator.resolveEditedStatus(
+                        parsedRow(
+                                List.of(new RowError("price", "INVALID_NUMBER", "Invalid price")),
+                                List.of(),
+                                sampleFields()));
+
+        assertThat(status).isEqualTo(ParsedRowStatus.error);
+    }
+
     private static AdapterParsedRow parsedRow(
             List<RowError> errors, List<RowError> warnings, ImportRowFields fields) {
         return new AdapterParsedRow(2, Map.of("sku", "SKU-001"), fields, errors, warnings);

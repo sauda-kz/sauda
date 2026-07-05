@@ -26,6 +26,18 @@ final class ParsedRowEntityMapper {
         return entity;
     }
 
+    static void applyValidationResult(
+            ParsedRow entity,
+            ImportRowFields fields,
+            List<RowError> errors,
+            List<RowError> warnings,
+            ParsedRowStatus status) {
+        entity.setParsedData(toParsedData(fields));
+        entity.setErrors(toErrorMaps(errors));
+        entity.setWarnings(toErrorMaps(warnings));
+        entity.setStatus(status);
+    }
+
     private static Map<String, Object> toParsedData(ImportRowFields fields) {
         if (fields == null) {
             return Map.of();
