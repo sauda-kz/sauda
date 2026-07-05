@@ -25,6 +25,7 @@ import com.sauda.repository.AppUserRepository;
 import com.sauda.repository.OrganizationRepository;
 import com.sauda.repository.RawUploadRepository;
 import com.sauda.service.mapper.RawUploadMapper;
+import com.sauda.service.imports.event.RawUploadStoredEvent;
 import com.sauda.testsupport.SecurityTestFixtures;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +40,7 @@ import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockMultipartFile;
@@ -51,6 +53,7 @@ class RawUploadServiceTest {
     @Mock private AppUserRepository appUserRepository;
     @Mock private StoredFileUploadService storedFileUploadService;
     @Mock private TenantAccessService tenantAccessService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private final RawUploadMapper rawUploadMapper = Mappers.getMapper(RawUploadMapper.class);
 
@@ -70,7 +73,8 @@ class RawUploadServiceTest {
                         appUserRepository,
                         storedFileUploadService,
                         rawUploadMapper,
-                        tenantAccessService);
+                        tenantAccessService,
+                        eventPublisher);
 
         distributorId = UUID.randomUUID();
         userId = UUID.randomUUID();
@@ -135,6 +139,11 @@ class RawUploadServiceTest {
         assertThat(response.originalFilename()).isEqualTo("prices.csv");
         assertThat(response.storagePath()).isEqualTo(prepared.storagePath());
         verify(storedFileUploadService).store(prepared);
+
+        ArgumentCaptor<RawUploadStoredEvent> eventCaptor =
+                ArgumentCaptor.forClass(RawUploadStoredEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().rawUploadId()).isEqualTo(response.id());
     }
 
     @Test

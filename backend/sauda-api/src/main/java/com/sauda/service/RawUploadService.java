@@ -19,8 +19,10 @@ import com.sauda.repository.RawUploadRepository;
 import com.sauda.security.principal.SaudaPrincipal;
 import com.sauda.security.principal.SecurityUtils;
 import com.sauda.service.mapper.RawUploadMapper;
+import com.sauda.service.imports.event.RawUploadStoredEvent;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class RawUploadService {
     private final StoredFileUploadService storedFileUploadService;
     private final RawUploadMapper rawUploadMapper;
     private final TenantAccessService tenantAccessService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public RawUploadService(
             RawUploadRepository rawUploadRepository,
@@ -46,13 +49,15 @@ public class RawUploadService {
             AppUserRepository appUserRepository,
             StoredFileUploadService storedFileUploadService,
             RawUploadMapper rawUploadMapper,
-            TenantAccessService tenantAccessService) {
+            TenantAccessService tenantAccessService,
+            ApplicationEventPublisher eventPublisher) {
         this.rawUploadRepository = rawUploadRepository;
         this.organizationRepository = organizationRepository;
         this.appUserRepository = appUserRepository;
         this.storedFileUploadService = storedFileUploadService;
         this.rawUploadMapper = rawUploadMapper;
         this.tenantAccessService = tenantAccessService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(noRollbackFor = SaudaException.class)
@@ -86,6 +91,7 @@ public class RawUploadService {
 
             upload.setStatus(RawUploadStatus.uploaded);
             RawUpload saved = rawUploadRepository.save(upload);
+            eventPublisher.publishEvent(new RawUploadStoredEvent(saved.getId()));
             log.info(
                     "Raw upload completed: uploadId={}, distributorId={}, path={}, size={}",
                     saved.getId(),

@@ -21,7 +21,7 @@ class CsvImportAdapterTest {
 
     @BeforeEach
     void setUp() {
-        csvImportAdapter = new CsvImportAdapter(new ImportRowMapper(), new ImportProperties(100_000, null));
+        csvImportAdapter = new CsvImportAdapter(new ImportRowMapper(), new ImportProperties(100_000, null, 2, 4, 50, 500));
     }
 
     @Test
