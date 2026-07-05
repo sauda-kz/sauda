@@ -77,6 +77,9 @@ public class Offer {
     @Column(name = "last_updated_at")
     private Instant lastUpdatedAt;
 
+    @Column(name = "last_imported_at")
+    private Instant lastImportedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_file_id")
     private ImportRun sourceFile;
