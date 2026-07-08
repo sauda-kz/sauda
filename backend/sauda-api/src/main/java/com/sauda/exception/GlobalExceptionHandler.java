@@ -1,6 +1,7 @@
 package com.sauda.exception;
 
 import com.sauda.dto.common.ApiErrorResponse;
+import com.sauda.dto.lot.IncompleteLotWarningResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,12 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(SaudaIncompleteLotException.class)
+    public ResponseEntity<IncompleteLotWarningResponse> handleIncompleteLotException(
+            SaudaIncompleteLotException exception) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(exception.getWarning());
+    }
 
     @ExceptionHandler(SaudaNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleSaudaNotFoundException(

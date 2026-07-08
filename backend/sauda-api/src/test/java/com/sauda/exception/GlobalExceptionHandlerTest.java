@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sauda.dto.common.ApiErrorResponse;
 import com.sauda.dto.lot.CreateLotRequest;
+import com.sauda.dto.lot.IncompleteLotWarningResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -70,9 +72,10 @@ class GlobalExceptionHandlerTest {
                                 null,
                                 null,
                                 null,
+                                com.sauda.domain.enums.LotStatus.active,
                                 "https://example.com",
                                 null,
-                                com.sauda.domain.enums.LotStatus.active),
+                                null),
                         "request");
         bindingResult.rejectValue("title", "NotBlank", "must not be blank");
 
@@ -112,6 +115,20 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().message()).isEqualTo("Invalid token");
+    }
+
+    @Test
+    void handleIncompleteLotExceptionReturnsUnprocessableEntity() {
+        var warning =
+                new IncompleteLotWarningResponse(
+                        "Не заполнены важные поля", List.of("budgetAmount"));
+
+        var response =
+                handler.handleIncompleteLotException(new SaudaIncompleteLotException(warning));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().missingFields()).containsExactly("budgetAmount");
     }
 
     @Test

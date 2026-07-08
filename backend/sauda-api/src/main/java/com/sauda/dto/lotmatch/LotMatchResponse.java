@@ -30,5 +30,6 @@ public record LotMatchResponse(
         boolean needsManualReview,
         String adminComment,
         String distributorComment,
+        Instant sentToDistributorAt,
         Instant createdAt,
         Instant updatedAt) {}

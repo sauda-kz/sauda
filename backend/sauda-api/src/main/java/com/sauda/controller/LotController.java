@@ -5,11 +5,17 @@ import com.sauda.domain.enums.LotStatus;
 import com.sauda.dto.lot.CreateLotRequest;
 import com.sauda.dto.lot.LotResponse;
 import com.sauda.dto.lot.UpdateLotRequest;
+import com.sauda.dto.lotmatch.LotMatchResponse;
+import com.sauda.dto.lotmatch.PotentialMatchResponse;
+import com.sauda.dto.lotmatch.SendLotToDistributorRequest;
+import com.sauda.service.LotMatchService;
+import com.sauda.service.LotMatchSuggestionService;
 import com.sauda.service.LotService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,18 +40,28 @@ import org.springframework.web.bind.annotation.RestController;
 public class LotController {
 
     private final LotService lotService;
+    private final LotMatchSuggestionService lotMatchSuggestionService;
+    private final LotMatchService lotMatchService;
 
-    public LotController(LotService lotService) {
+    public LotController(
+            LotService lotService,
+            LotMatchSuggestionService lotMatchSuggestionService,
+            LotMatchService lotMatchService) {
         this.lotService = lotService;
+        this.lotMatchSuggestionService = lotMatchSuggestionService;
+        this.lotMatchService = lotMatchService;
     }
 
-    @Operation(summary = "List lots with optional status filter")
+    @Operation(summary = "List lots with optional filters")
     @GetMapping
     @PreAuthorize("hasAuthority('lot:read')")
     public Page<LotResponse> listLots(
             @RequestParam(required = false) LotStatus status,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String source,
             @PageableDefault(size = 20) Pageable pageable) {
-        return lotService.listLots(status, pageable);
+        return lotService.listLots(status, q, category, source, pageable);
     }
 
     @Operation(summary = "Get lot by ID")
@@ -53,6 +69,21 @@ public class LotController {
     @PreAuthorize("hasAuthority('lot:read')")
     public LotResponse getLot(@PathVariable UUID id) {
         return lotService.getLot(id);
+    }
+
+    @Operation(summary = "List potential offer matches for lot")
+    @GetMapping("/{id}/potential-matches")
+    @PreAuthorize("hasAuthority('lot_match:read')")
+    public List<PotentialMatchResponse> getPotentialMatches(@PathVariable UUID id) {
+        return lotMatchSuggestionService.suggestForLot(id);
+    }
+
+    @Operation(summary = "Send lot to distributor via offer match")
+    @PostMapping("/{id}/send-to-distributor")
+    @PreAuthorize("hasAuthority('lot_match:manage')")
+    public LotMatchResponse sendToDistributor(
+            @PathVariable UUID id, @Valid @RequestBody SendLotToDistributorRequest request) {
+        return lotMatchService.sendToDistributor(id, request);
     }
 
     @Operation(summary = "Create a new lot")

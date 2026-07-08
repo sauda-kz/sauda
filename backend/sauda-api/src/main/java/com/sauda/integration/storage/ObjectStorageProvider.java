@@ -7,4 +7,6 @@ public interface ObjectStorageProvider {
     void putObject(String key, InputStream content, long contentLength, String contentType);
 
     StoredObject getObject(String key);
+
+    void deleteObject(String key);
 }

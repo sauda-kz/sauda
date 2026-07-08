@@ -37,4 +37,11 @@ public class InMemoryObjectStorageProvider implements ObjectStorageProvider {
         String contentType = contentTypes.getOrDefault(key, "application/octet-stream");
         return new StoredObject(new ByteArrayInputStream(bytes), bytes.length, contentType);
     }
+
+    @Override
+    public void deleteObject(String key) {
+        log.info("[STORAGE][IN-MEMORY] Deleting object: key={}", key);
+        storage.remove(key);
+        contentTypes.remove(key);
+    }
 }

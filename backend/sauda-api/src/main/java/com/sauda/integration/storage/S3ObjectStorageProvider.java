@@ -9,6 +9,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -64,6 +65,12 @@ public class S3ObjectStorageProvider implements ObjectStorageProvider {
         } catch (NoSuchKeyException exception) {
             throw new IllegalStateException("Stored object not found: " + key, exception);
         }
+    }
+
+    @Override
+    public void deleteObject(String key) {
+        log.info("[STORAGE] Deleting object: bucket={}, key={}", bucket, key);
+        s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build());
     }
 
     private void ensureBucketExists() {

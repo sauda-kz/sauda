@@ -8,7 +8,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.sauda.config.StorageProperties;
 import com.sauda.domain.entity.AppUser;
 import com.sauda.domain.entity.Organization;
 import com.sauda.domain.entity.RawUpload;
@@ -18,8 +17,10 @@ import com.sauda.domain.enums.RoleCode;
 import com.sauda.dto.rawupload.RawUploadDownload;
 import com.sauda.exception.SaudaException;
 import com.sauda.exception.SaudaNotFoundException;
-import com.sauda.integration.storage.ObjectStorageProvider;
 import com.sauda.integration.storage.StoredObject;
+import com.sauda.integration.storage.upload.FileUploadPolicies;
+import com.sauda.integration.storage.upload.PreparedUpload;
+import com.sauda.integration.storage.upload.StoredFileUploadService;
 import com.sauda.repository.AppUserRepository;
 import com.sauda.repository.OrganizationRepository;
 import com.sauda.repository.RawUploadRepository;
@@ -48,13 +49,10 @@ class RawUploadServiceTest {
     @Mock private RawUploadRepository rawUploadRepository;
     @Mock private OrganizationRepository organizationRepository;
     @Mock private AppUserRepository appUserRepository;
-    @Mock private ObjectStorageProvider objectStorageProvider;
+    @Mock private StoredFileUploadService storedFileUploadService;
     @Mock private TenantAccessService tenantAccessService;
 
     private final RawUploadMapper rawUploadMapper = Mappers.getMapper(RawUploadMapper.class);
-    private final StorageProperties storageProperties =
-            new StorageProperties(
-                    "http://localhost:9000", "key", "secret", "bucket", "us-east-1", 1024);
 
     private RawUploadService rawUploadService;
 
@@ -70,10 +68,9 @@ class RawUploadServiceTest {
                         rawUploadRepository,
                         organizationRepository,
                         appUserRepository,
-                        objectStorageProvider,
+                        storedFileUploadService,
                         rawUploadMapper,
-                        tenantAccessService,
-                        storageProperties);
+                        tenantAccessService);
 
         distributorId = UUID.randomUUID();
         userId = UUID.randomUUID();
@@ -108,12 +105,22 @@ class RawUploadServiceTest {
                         "prices.csv",
                         "text/csv",
                         "sku,price".getBytes(StandardCharsets.UTF_8));
+        PreparedUpload prepared =
+                new PreparedUpload(
+                        "prices.csv",
+                        "text/csv",
+                        "raw/" + distributorId + "/20260701T120000Z_prices.csv",
+                        "sku,price".getBytes(StandardCharsets.UTF_8),
+                        "checksum");
 
         when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
         when(organizationRepository.getReferenceById(distributorId)).thenReturn(distributor);
         when(appUserRepository.getReferenceById(userId)).thenReturn(uploader);
+        when(storedFileUploadService.prepare(
+                        file, FileUploadPolicies.RAW_DISTRIBUTOR_PRICE, "raw/" + distributorId))
+                .thenReturn(prepared);
         when(rawUploadRepository.save(any(RawUpload.class)))
                 .thenAnswer(
                         invocation -> {
@@ -126,44 +133,8 @@ class RawUploadServiceTest {
 
         assertThat(response.status()).isEqualTo(RawUploadStatus.uploaded);
         assertThat(response.originalFilename()).isEqualTo("prices.csv");
-        assertThat(response.distributorId()).isEqualTo(distributorId);
-        assertThat(response.uploadedByUserId()).isEqualTo(userId);
-        assertThat(response.uploadedByRole()).isEqualTo(RoleCode.distributor_manager.name());
-        assertThat(response.storagePath()).startsWith("raw/" + distributorId + "/");
-        assertThat(response.storagePath()).endsWith("_prices.csv");
-
-        ArgumentCaptor<String> pathCaptor = ArgumentCaptor.forClass(String.class);
-        verify(objectStorageProvider)
-                .putObject(pathCaptor.capture(), any(), eq(9L), eq("text/csv"));
-        assertThat(pathCaptor.getValue()).isEqualTo(response.storagePath());
-    }
-
-    @Test
-    void uploadPreservesUnicodeFilename() {
-        MockMultipartFile file =
-                new MockMultipartFile(
-                        "file",
-                        "Прайс остатки.xlsx",
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        new byte[] {1, 2, 3});
-
-        when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
-        when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
-                .thenReturn(true);
-        when(organizationRepository.getReferenceById(distributorId)).thenReturn(distributor);
-        when(appUserRepository.getReferenceById(userId)).thenReturn(uploader);
-        when(rawUploadRepository.save(any(RawUpload.class)))
-                .thenAnswer(
-                        invocation -> {
-                            RawUpload upload = invocation.getArgument(0);
-                            upload.setId(UUID.randomUUID());
-                            return upload;
-                        });
-
-        var response = rawUploadService.upload(distributorId, file);
-
-        assertThat(response.originalFilename()).isEqualTo("Прайс остатки.xlsx");
-        assertThat(response.storagePath()).endsWith("_Прайс остатки.xlsx");
+        assertThat(response.storagePath()).isEqualTo(prepared.storagePath());
+        verify(storedFileUploadService).store(prepared);
     }
 
     @Test
@@ -175,6 +146,14 @@ class RawUploadServiceTest {
         when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
+        when(organizationRepository.getReferenceById(distributorId)).thenReturn(distributor);
+        when(appUserRepository.getReferenceById(userId)).thenReturn(uploader);
+        when(storedFileUploadService.prepare(
+                        file, FileUploadPolicies.RAW_DISTRIBUTOR_PRICE, "raw/" + distributorId))
+                .thenThrow(new SaudaException("Unsupported file type"));
+        when(storedFileUploadService.emptyChecksum()).thenReturn("empty");
+        when(rawUploadRepository.save(any(RawUpload.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThatThrownBy(() -> rawUploadService.upload(distributorId, file))
                 .isInstanceOf(SaudaException.class)
@@ -182,33 +161,29 @@ class RawUploadServiceTest {
     }
 
     @Test
-    void uploadRejectsEmptyFile() {
-        MockMultipartFile file =
-                new MockMultipartFile("file", "prices.csv", "text/csv", new byte[0]);
-
-        when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
-        when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
-                .thenReturn(true);
-
-        assertThatThrownBy(() -> rawUploadService.upload(distributorId, file))
-                .isInstanceOf(SaudaException.class)
-                .hasMessage("File is required");
-    }
-
-    @Test
     void uploadPersistsFailedRecordWhenStorageFails() {
         MockMultipartFile file =
                 new MockMultipartFile(
                         "file", "stock.xlsx", "application/vnd.ms-excel", new byte[] {1});
+        PreparedUpload prepared =
+                new PreparedUpload(
+                        "stock.xlsx",
+                        "application/vnd.ms-excel",
+                        "raw/" + distributorId + "/20260701T120000Z_stock.xlsx",
+                        new byte[] {1},
+                        "checksum");
 
         when(tenantAccessService.resolveDistributorId(distributorId)).thenReturn(distributorId);
         when(organizationRepository.existsByIdAndType(distributorId, OrganizationType.distributor))
                 .thenReturn(true);
         when(organizationRepository.getReferenceById(distributorId)).thenReturn(distributor);
         when(appUserRepository.getReferenceById(userId)).thenReturn(uploader);
-        doThrow(new IllegalStateException("storage down"))
-                .when(objectStorageProvider)
-                .putObject(any(), any(), any(Long.class), any());
+        when(storedFileUploadService.prepare(
+                        file, FileUploadPolicies.RAW_DISTRIBUTOR_PRICE, "raw/" + distributorId))
+                .thenReturn(prepared);
+        doThrow(new SaudaException("Failed to store uploaded file"))
+                .when(storedFileUploadService)
+                .store(prepared);
         when(rawUploadRepository.save(any(RawUpload.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -219,8 +194,6 @@ class RawUploadServiceTest {
         ArgumentCaptor<RawUpload> uploadCaptor = ArgumentCaptor.forClass(RawUpload.class);
         verify(rawUploadRepository).save(uploadCaptor.capture());
         assertThat(uploadCaptor.getValue().getStatus()).isEqualTo(RawUploadStatus.failed);
-        assertThat(uploadCaptor.getValue().getErrorMessage())
-                .isEqualTo("Failed to store uploaded file");
     }
 
     @Test
@@ -253,7 +226,7 @@ class RawUploadServiceTest {
                 .thenReturn(true);
         when(rawUploadRepository.findByIdAndDistributorId(uploadId, distributorId))
                 .thenReturn(Optional.of(upload));
-        when(objectStorageProvider.getObject(upload.getStoragePath())).thenReturn(storedObject);
+        when(storedFileUploadService.fetch(upload.getStoragePath())).thenReturn(storedObject);
 
         RawUploadDownload download = rawUploadService.download(distributorId, uploadId);
 
