@@ -1,51 +1,99 @@
+import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { LogOut, Menu, X } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
+import { Logo } from "../ui/Logo";
 import { useAdminPermissions } from "../../features/admin/hooks/useAdminPermissions";
 
 export function AdminLayout() {
   const { user, logout } = useAuth();
   const { canReadImports } = useAdminPermissions();
   const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  const items: [string, string][] = [
+    ["/admin/lots", "Лоты"],
+    ...(canReadImports ? ([["/admin/imports", "Импорты"]] as [string, string][]) : []),
+  ];
 
   const navLink = (to: string, label: string) => {
     const active = location.pathname.startsWith(to);
     return (
       <Link
+        key={to}
         to={to}
-        className={`text-sm font-medium ${active ? "text-brand-600" : "text-slate-600 hover:text-brand-600"}`}
+        aria-current={active ? "page" : undefined}
+        className={`relative inline-flex h-16 items-center text-sm font-medium transition-colors ${
+          active ? "text-brand-700" : "text-slate-600 hover:text-slate-900"
+        }`}
       >
         {label}
+        {active && (
+          <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600" />
+        )}
       </Link>
     );
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="flex min-h-dvh flex-col bg-slate-50">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-8">
-            <Link to="/admin/lots" className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white">
-                S
-              </span>
-              <span className="text-xl font-bold text-slate-900">Sauda Admin</span>
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Меню"
+              aria-expanded={menuOpen}
+              className="-ml-1 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 sm:hidden"
+            >
+              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            <Link to="/admin/lots">
+              <Logo suffix="Admin" />
             </Link>
-            <nav className="hidden items-center gap-6 sm:flex">
-              {navLink("/admin/lots", "Лоты")}
-              {canReadImports && navLink("/admin/imports", "Импорты")}
+            <nav className="hidden items-center gap-7 sm:flex">
+              {items.map(([to, label]) => navLink(to, label))}
             </nav>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-slate-500 sm:block">{user?.email}</span>
+          <div className="flex items-center gap-3">
+            <span className="hidden max-w-[200px] truncate text-sm text-slate-500 sm:block">
+              {user?.email}
+            </span>
             <button
               type="button"
               onClick={logout}
-              className="text-sm text-slate-500 hover:text-slate-700"
+              className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
             >
-              Выйти
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:block">Выйти</span>
             </button>
           </div>
         </div>
+
+        {menuOpen && (
+          <nav className="border-t border-slate-100 bg-white px-2 py-2 sm:hidden">
+            {items.map(([to, label]) => {
+              const active = location.pathname.startsWith(to);
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  aria-current={active ? "page" : undefined}
+                  className={`block rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    active ? "bg-brand-50 text-brand-700" : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
       </header>
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
         <Outlet />

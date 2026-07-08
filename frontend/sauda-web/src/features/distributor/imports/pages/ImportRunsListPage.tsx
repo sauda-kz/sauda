@@ -1,9 +1,10 @@
-import { Loader2, Upload } from "lucide-react";
+import { FileUp, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { uploadRawFile } from "../../../../api/imports";
 import { ApiError } from "../../../../api/client";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { Button } from "../../../../components/ui/Button";
+import { TableSkeleton } from "../../../../components/ui/Skeleton";
 import { ImportRunsTable } from "../components/ImportRunsTable";
 import { useDistributorPermissions } from "../../hooks/useDistributorPermissions";
 import { useImportRuns } from "../hooks/useImportRuns";
@@ -89,19 +90,22 @@ export function ImportRunsListPage() {
         </div>
       )}
 
-      {loading && (
-        <p className="flex items-center justify-center gap-2 text-sm text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Загрузка…
-        </p>
-      )}
+      {loading && <TableSkeleton rows={5} cols={5} />}
       {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
       )}
       {!loading && !error && items.length === 0 && (
-        <p className="rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center text-sm text-slate-500">
-          Импортов пока нет. Загрузите первый файл прайс-листа.
-        </p>
+        <div className="flex flex-col items-center rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+            <FileUp className="h-6 w-6" />
+          </span>
+          <p className="mt-4 text-sm font-medium text-slate-900">Импортов пока нет</p>
+          <p className="mt-1 max-w-sm text-sm text-slate-500">
+            Загрузите первый файл прайс-листа, чтобы увидеть историю обработки здесь.
+          </p>
+        </div>
       )}
       {!loading && !error && items.length > 0 && <ImportRunsTable items={items} />}
 

@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { BellOff } from "lucide-react";
+import { Spinner } from "../../../../components/ui/Spinner";
 import { useNotifications } from "../hooks/useNotifications";
 
 export function NotificationsPage() {
@@ -11,17 +13,26 @@ export function NotificationsPage() {
         <p className="mt-1 text-sm text-slate-500">Новые подходящие лоты для вашей компании</p>
       </div>
 
-      {loading && <p className="text-sm text-slate-500">Загрузка…</p>}
+      {loading && <Spinner label="Загрузка уведомлений…" />}
       {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-      )}
-
-      {!loading && !error && items.length === 0 && (
-        <p className="rounded-xl border border-dashed border-slate-200 bg-white py-12 text-center text-sm text-slate-500">
-          Нет уведомлений
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
         </p>
       )}
 
+      {!loading && !error && items.length === 0 && (
+        <div className="flex flex-col items-center rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+            <BellOff className="h-6 w-6" />
+          </span>
+          <p className="mt-4 text-sm font-medium text-slate-900">Пока нет уведомлений</p>
+          <p className="mt-1 max-w-sm text-sm text-slate-500">
+            Здесь появятся оповещения о новых подходящих лотах для вашей компании.
+          </p>
+        </div>
+      )}
+
+      {!loading && !error && items.length > 0 && (
       <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         {items.map((n) => (
           <li key={n.id}>
@@ -51,6 +62,7 @@ export function NotificationsPage() {
           </li>
         ))}
       </ul>
+      )}
     </div>
   );
 }

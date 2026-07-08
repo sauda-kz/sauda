@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { markNotificationRead } from "../../../../api/notifications";
 import { useAuth } from "../../../../auth/AuthProvider";
 import { useDistributorPermissions } from "../../hooks/useDistributorPermissions";
+import { Spinner } from "../../../../components/ui/Spinner";
 import { SuitableLotDetailView } from "../components/SuitableLotDetailView";
 import { useSuitableLotDetail } from "../hooks/useSuitableLotDetail";
 
@@ -32,7 +33,7 @@ export function SuitableLotDetailPage() {
   }
 
   if (loading) {
-    return <div className="py-24 text-center text-slate-500">Загрузка…</div>;
+    return <Spinner label="Загрузка лота…" className="h-5 w-5" />;
   }
 
   if (error || !match) {

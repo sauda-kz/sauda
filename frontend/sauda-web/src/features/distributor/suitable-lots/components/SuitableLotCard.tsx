@@ -6,7 +6,9 @@ import {
   formatMoney,
   formatPercent,
   formatQuantity,
+  formatStockStatus,
   isDeadlineUrgent,
+  prettifyCode,
 } from "../../../../utils/format";
 import { Badge, MatchScoreBadge } from "../../../../components/ui/Badge";
 
@@ -68,7 +70,9 @@ export function SuitableLotCard({ match }: SuitableLotCardProps) {
             {formatQuantity(match.availableQuantity, "шт")}
           </p>
           {match.stockStatus && (
-            <p className="text-xs text-slate-500">Наличие: {match.stockStatus}</p>
+            <p className="text-xs text-slate-500">
+              Наличие: {formatStockStatus(match.stockStatus)}
+            </p>
           )}
         </div>
       </div>
@@ -81,7 +85,7 @@ export function SuitableLotCard({ match }: SuitableLotCardProps) {
               className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800"
             >
               <AlertTriangle className="h-3 w-3" />
-              {risk}
+              {prettifyCode(risk)}
             </span>
           ))}
         </div>

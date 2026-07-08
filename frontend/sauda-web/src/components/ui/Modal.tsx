@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { Button } from "./Button";
 
@@ -12,20 +13,33 @@ interface ModalProps {
 }
 
 export function Modal({ open, title, children, onClose, footer, wide }: ModalProps) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
-        className="absolute inset-0 bg-slate-900/40"
+        className="animate-overlay-in absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
         aria-label="Закрыть"
         onClick={onClose}
       />
       <div
         role="dialog"
         aria-modal="true"
-        className={`relative max-h-[90vh] w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl ${wide ? "max-w-2xl" : "max-w-lg"}`}
+        className={`animate-dialog-in relative max-h-[90vh] w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl ${wide ? "max-w-2xl" : "max-w-lg"}`}
       >
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
           <h2 className="text-lg font-semibold text-slate-900">{title}</h2>

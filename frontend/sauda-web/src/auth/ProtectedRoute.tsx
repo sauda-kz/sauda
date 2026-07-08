@@ -1,13 +1,16 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
+import { LogoMark } from "../components/ui/Logo";
+import { Spinner } from "../components/ui/Spinner";
 
 export function ProtectedRoute() {
   const { token, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500">
-        Загрузка…
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-slate-50">
+        <LogoMark className="h-12 w-12" />
+        <Spinner className="h-5 w-5 text-brand-600" />
       </div>
     );
   }

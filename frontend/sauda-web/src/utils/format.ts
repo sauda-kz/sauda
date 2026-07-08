@@ -65,6 +65,45 @@ export function formatPriceListUpdatedAt(iso: string | null | undefined): string
   return isToday ? `Сегодня · ${datePart} · ${timePart}` : `${datePart} · ${timePart}`;
 }
 
+const stockStatusLabels: Record<string, string> = {
+  in_stock: "В наличии",
+  low_stock: "Мало на складе",
+  out_of_stock: "Нет в наличии",
+  on_order: "Под заказ",
+  unknown: "Не указано",
+};
+
+export function formatStockStatus(status: string | null | undefined): string {
+  if (!status) return "Не указано";
+  return stockStatusLabels[status] ?? prettifyCode(status);
+}
+
+function pluralRu(n: number, forms: [string, string, string]): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return forms[0];
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return forms[1];
+  return forms[2];
+}
+
+/** Localise common backend lead-time strings like "3 days" → "3 дня". */
+export function formatLeadTime(value: string | null | undefined): string {
+  if (!value) return "—";
+  const match = value.trim().match(/^(\d+)\s*(day|days|week|weeks|month|months)$/i);
+  if (!match) return value;
+  const n = Number(match[1]);
+  const unit = match[2].toLowerCase();
+  if (unit.startsWith("day")) return `${n} ${pluralRu(n, ["день", "дня", "дней"])}`;
+  if (unit.startsWith("week")) return `${n} ${pluralRu(n, ["неделя", "недели", "недель"])}`;
+  return `${n} ${pluralRu(n, ["месяц", "месяца", "месяцев"])}`;
+}
+
+/** Turn a raw enum code like "price_out_of_range" into "Price out of range". */
+export function prettifyCode(code: string): string {
+  const text = code.replace(/[_-]+/g, " ").trim();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return "—";
   const date = new Date(iso);
