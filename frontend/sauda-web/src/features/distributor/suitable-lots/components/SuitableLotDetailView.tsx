@@ -11,6 +11,7 @@ import {
   formatMoney,
   formatPercent,
   formatQuantity,
+  prettifyCode,
 } from "../../../../utils/format";
 import { Badge } from "../../../../components/ui/Badge";
 import { LotMatchStatusActions } from "./LotMatchStatusActions";
@@ -121,7 +122,7 @@ export function SuitableLotDetailView({
                     className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    {req}
+                    {prettifyCode(req)}
                   </span>
                 ))}
               </div>
@@ -138,7 +139,7 @@ export function SuitableLotDetailView({
                     className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800"
                   >
                     <AlertTriangle className="h-3.5 w-3.5" />
-                    {risk}
+                    {prettifyCode(risk)}
                   </span>
                 ))}
               </div>

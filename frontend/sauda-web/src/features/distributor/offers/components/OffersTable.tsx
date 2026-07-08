@@ -1,5 +1,5 @@
 import { OfferStockBadge } from "./OfferStockBadge";
-import { formatMoney } from "../../../../utils/format";
+import { formatLeadTime, formatMoney } from "../../../../utils/format";
 import type { Offer } from "../types";
 
 interface OffersTableProps {
@@ -47,7 +47,7 @@ export function OffersTable({ items }: OffersTableProps) {
               <td className="px-4 py-3">
                 <OfferStockBadge status={offer.stockStatus} />
               </td>
-              <td className="px-4 py-3 text-slate-600">{offer.leadTime ?? "—"}</td>
+              <td className="px-4 py-3 text-slate-600">{formatLeadTime(offer.leadTime)}</td>
             </tr>
           ))}
         </tbody>

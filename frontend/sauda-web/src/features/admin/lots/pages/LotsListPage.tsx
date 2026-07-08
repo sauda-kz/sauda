@@ -6,6 +6,7 @@ import { useAuth } from "../../../../auth/AuthProvider";
 import { ApiError } from "../../../../api/client";
 import { Button } from "../../../../components/ui/Button";
 import { InputField } from "../../../../components/ui/Input";
+import { TableSkeleton } from "../../../../components/ui/Skeleton";
 import { LotsTable } from "../components/LotsTable";
 import { useLots } from "../hooks/useLots";
 import type { Lot, LotStatus } from "../types";
@@ -65,7 +66,7 @@ export function LotsListPage() {
         <label className="block text-sm font-medium text-slate-700">
           Статус
           <select
-            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-xs outline-none transition-colors hover:border-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/25"
             value={status}
             onChange={(e) => setStatus(e.target.value as LotStatus | "")}
           >
@@ -80,9 +81,11 @@ export function LotsListPage() {
         <InputField label="Источник" value={source} onChange={(e) => setSource(e.target.value)} />
       </div>
 
-      {loading && <p className="text-center text-sm text-slate-500">Загрузка…</p>}
+      {loading && <TableSkeleton rows={6} cols={7} />}
       {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+        </p>
       )}
       {page && !loading && (
         <LotsTable

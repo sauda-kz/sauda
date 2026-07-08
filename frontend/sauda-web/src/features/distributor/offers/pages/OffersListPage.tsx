@@ -1,5 +1,6 @@
-import { Loader2, Search } from "lucide-react";
+import { PackageOpen, Search } from "lucide-react";
 import { Button } from "../../../../components/ui/Button";
+import { TableSkeleton } from "../../../../components/ui/Skeleton";
 import { OffersTable } from "../components/OffersTable";
 import { useDistributorPermissions } from "../../hooks/useDistributorPermissions";
 import { useOffers } from "../hooks/useOffers";
@@ -71,17 +72,22 @@ export function OffersListPage() {
         </select>
       </div>
 
-      {loading && (
-        <p className="flex items-center justify-center gap-2 text-sm text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Загрузка…
+      {loading && <TableSkeleton rows={8} cols={6} />}
+      {error && (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
         </p>
       )}
-      {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
       {!loading && !error && items.length === 0 && (
-        <p className="rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center text-sm text-slate-500">
-          Позиций пока нет. Загрузите прайс-лист в разделе «Импорты».
-        </p>
+        <div className="flex flex-col items-center rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+            <PackageOpen className="h-6 w-6" />
+          </span>
+          <p className="mt-4 text-sm font-medium text-slate-900">Позиций пока нет</p>
+          <p className="mt-1 max-w-sm text-sm text-slate-500">
+            Загрузите прайс-лист в разделе «Импорты», чтобы позиции появились здесь.
+          </p>
+        </div>
       )}
       {!loading && !error && items.length > 0 && <OffersTable items={items} />}
 
