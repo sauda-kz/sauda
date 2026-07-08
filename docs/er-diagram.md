@@ -240,13 +240,36 @@ erDiagram
     import_run {
         uuid id PK
         uuid distributor_id FK
+        uuid raw_upload_id FK
+        varchar adapter_key
+        import_status status
+        integer total_rows
+        integer parsed_rows_count
+        integer error_rows_count
         timestamptz started_at
         timestamptz finished_at
-        integer rows_total
-        integer rows_ok
-        integer rows_err
-        import_status status
+        uuid approved_by_user_id FK
+        timestamptz approved_at
+        uuid rejected_by_user_id FK
+        timestamptz rejected_at
         text source_filename
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    parsed_row {
+        uuid id PK
+        uuid import_run_id FK
+        integer source_row_number
+        jsonb raw_row_data
+        jsonb parsed_data
+        parsed_row_status status
+        jsonb errors
+        jsonb warnings
+        uuid edited_by_user_id FK
+        timestamptz edited_at
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     import_error {
@@ -349,8 +372,13 @@ erDiagram
     offer ||--o{ lot_match : matched_in
     organization ||--o{ lot_match : distributor
     organization ||--o{ import_run : imports
+    raw_upload ||--o{ import_run : triggers
+    import_run ||--o{ parsed_row : draft_rows
     import_run ||--o{ import_error : errors
     import_run ||--o{ offer : source_file
+    app_user ||--o{ parsed_row : edited_by
+    app_user ||--o{ import_run : approved_by
+    app_user ||--o{ import_run : rejected_by
     organization ||--o{ raw_upload : raw_files
     app_user ||--o{ raw_upload : uploaded_by
     organization ||--o{ cost_center : buyer
@@ -372,7 +400,7 @@ erDiagram
     app_user ||--o{ order_event : actor
 ```
 
-**PostgreSQL ENUM types** (не отдельные таблицы): `organization_type`, `stock_status`, `lot_status`, `lot_match_status`, `check_result`, `cart_status`, `order_status`, `import_status`. Базовые значения — в `V2__init.sql`; расширения `lot_status` и `lot_match_status` — в `V3__lot_mvp_structure.sql`; `low_stock` в `stock_status` — в `V5__phase0_money_vat_stock.sql`. НДС на offer: `price_includes_vat BOOLEAN` (не enum).
+**PostgreSQL ENUM types** (не отдельные таблицы): `organization_type`, `stock_status`, `lot_status`, `lot_match_status`, `check_result`, `cart_status`, `order_status`, `import_status`, `parsed_row_status`, `raw_upload_status`. Базовые значения — в `V2__init.sql`; расширения `import_status` и таблица `parsed_row` — в `V10__sauda_008_import_framework.sql`; `raw_upload_status` — в `V7__raw_upload.sql`.
 
 **Ограничения Mermaid:** в атрибутах только `PK` / `FK` / `UK`; без стрелок `→` и без inline-комментариев в кавычках внутри `erDiagram` (ломают парсер). Детали колонок — в миграции.
 
@@ -398,6 +426,7 @@ erDiagram
 | `lot` | `Lot` |
 | `lot_match` | `LotMatch` |
 | `import_run` | `ImportRun` |
+| `parsed_row` | `ParsedRow` |
 | `import_error` | `ImportError` |
 | `raw_upload` | `RawUpload` |
 | `cost_center` | `CostCenter` |

@@ -1,0 +1,7 @@
+sku,name,brand,mpn,price,price_includes_vat,stock_quantity,stock_status,lead_time_days
+SKU-001,SSD Samsung 990,Samsung,990-1TB,125000.50,true,15,in_stock,3
+SKU-002,HDD WD Blue,Western Digital,WD40EZAZ,45000,true,10,in_stock,2
+SKU-003,Broken stock item,Generic,GEN-003,1000,false,-5,out_of_stock,1
+,Missing SKU,,,500,true,1,unknown,
+SKU-004,Bad boolean item,Generic,GEN-004,750,maybe,5,low_stock,4
+SKU-005,Unknown status item,Generic,GEN-005,900,да,2,not_a_status,7

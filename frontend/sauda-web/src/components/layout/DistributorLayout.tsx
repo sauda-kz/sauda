@@ -2,6 +2,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { ChevronDown, User } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import { NotificationBell } from "../../features/distributor/notifications/components/NotificationBell";
+import { useDistributorPermissions } from "../../features/distributor/hooks/useDistributorPermissions";
 import { Footer } from "./Footer";
 
 function SaudaLogo() {
@@ -17,6 +18,7 @@ function SaudaLogo() {
 
 export function DistributorLayout() {
   const { organization, logout } = useAuth();
+  const { canReadImports } = useDistributorPermissions();
   const location = useLocation();
   const orgName = organization?.name ?? "Компания";
 
@@ -40,6 +42,7 @@ export function DistributorLayout() {
             <SaudaLogo />
             <nav className="hidden items-center gap-6 sm:flex">
               {navLink("/suitable-lots", "Подходящие лоты")}
+              {canReadImports && navLink("/imports", "Импорты")}
               {navLink("/notifications", "Уведомления")}
             </nav>
           </div>

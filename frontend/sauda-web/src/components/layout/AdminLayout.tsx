@@ -1,8 +1,23 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/AuthProvider";
+import { useAdminPermissions } from "../../features/admin/hooks/useAdminPermissions";
 
 export function AdminLayout() {
   const { user, logout } = useAuth();
+  const { canReadImports } = useAdminPermissions();
+  const location = useLocation();
+
+  const navLink = (to: string, label: string) => {
+    const active = location.pathname.startsWith(to);
+    return (
+      <Link
+        to={to}
+        className={`text-sm font-medium ${active ? "text-brand-600" : "text-slate-600 hover:text-brand-600"}`}
+      >
+        {label}
+      </Link>
+    );
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
@@ -15,13 +30,9 @@ export function AdminLayout() {
               </span>
               <span className="text-xl font-bold text-slate-900">Sauda Admin</span>
             </Link>
-            <nav className="hidden sm:block">
-              <Link
-                to="/admin/lots"
-                className="text-sm font-medium text-brand-600"
-              >
-                Лоты
-              </Link>
+            <nav className="hidden items-center gap-6 sm:flex">
+              {navLink("/admin/lots", "Лоты")}
+              {canReadImports && navLink("/admin/imports", "Импорты")}
             </nav>
           </div>
           <div className="flex items-center gap-4">

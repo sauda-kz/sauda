@@ -1,7 +1,7 @@
 import type { ApiErrorBody } from "../types/api";
 
 const API_ROOT = import.meta.env.VITE_API_URL ?? "/api";
-const API_BASE = `${API_ROOT}/v1`;
+export const API_BASE = `${API_ROOT}/v1`;
 
 export class ApiError extends Error {
   status: number;

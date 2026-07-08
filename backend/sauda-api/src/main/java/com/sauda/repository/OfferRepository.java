@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 public interface OfferRepository
         extends JpaRepository<Offer, UUID>, JpaSpecificationExecutor<Offer> {
 
+    Optional<Offer> findByDistributorIdAndInternalSku(UUID distributorId, String internalSku);
+
     @EntityGraph(attributePaths = "distributor")
     Optional<Offer> findWithDistributorById(UUID id);
 

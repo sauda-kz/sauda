@@ -87,6 +87,26 @@ Spring `@Profile` выбирает активный bean. Прикладной �
 
 При изменении доменной модели обновляйте [er-diagram.md](er-diagram.md) (Mermaid ER-диаграмма).
 
+## Каркас импорта (SAUDA-008)
+
+Импорт прайс-листов построен по принципу **Open/Closed**: ядро оркестрации не меняется при добавлении новых форматов.
+
+| Компонент | Пакет | Роль |
+|-----------|-------|------|
+| `ImportAdapter` | `service/imports/adapter` | Контракт парсера (CSV, XLSX, …) |
+| `ImportAdapterRegistry` | `service/imports/adapter` | Выбор адаптера по `ImportSource` |
+| `ImportRunService` | `service/imports` | State machine, create/process/approve/reject |
+| `OfferUpsertService` | `service/imports` | Применение `valid`/`edited` строк к `offer` |
+| `ImportTriggerListener` | `service/imports/event` | Async trigger после raw upload (`AFTER_COMMIT`) |
+
+**Event-driven авто-запуск:** `RawUploadService` публикует `RawUploadStoredEvent` → listener создаёт run и вызывает `process()`.
+
+**State machine:** `ImportRunStatusTransitions` — единая точка допустимых переходов статусов run.
+
+**Tenant isolation:** `TenantAccessService.resolveDistributorId()` — distributor видит только свою org; platform_admin может указать любой `distributorId` (read-only).
+
+Подробнее: [import-framework.md](import-framework.md).
+
 ## Безопасность (в будущем)
 
 Spring Security запланирован, но в этом фундаменте не включён. Actuator предоставляет health-пробы для оркестрации контейнеров.

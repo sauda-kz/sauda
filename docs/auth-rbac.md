@@ -94,6 +94,7 @@ WHERE u.email = 'manager@shop.kz'
 | `offer:manage` | offer | manage | Создание/редактирование офферов |
 | `import:run` | import | run | Загрузка и запуск импорта прайса |
 | `import:read` | import | read | История импортов и ошибки |
+| `import:approve` | import | approve | Подтверждение/отклонение импорта и правка строк |
 | `lot:read` | lot | read | Просмотр лотов |
 | `lot:create` | lot | create | Создание лотов |
 | `lot:manage` | lot | manage | Обновление и архивация лотов |
@@ -126,6 +127,8 @@ WHERE u.email = 'manager@shop.kz'
 | canonical_product:manage | ✅ |
 | offer:read | ✅ |
 | import:read | ✅ |
+| import:run | ✅ |
+| import:approve | |
 | lot:read | ✅ |
 | lot:create | ✅ |
 | lot:manage | ✅ |
@@ -156,6 +159,7 @@ WHERE u.email = 'manager@shop.kz'
 | offer:manage | ✅ | |
 | import:run | ✅ | |
 | import:read | ✅ | ✅ |
+| import:approve | ✅ | |
 | lot_match:read | ✅ | ✅ |
 | lot_match:review | ✅ | |
 
@@ -166,7 +170,7 @@ WHERE u.email = 'manager@shop.kz'
 | Домен | Кто обычно действует | Ключевые permissions |
 |-------|----------------------|----------------------|
 | Каталог (`canonical_product`) | `platform_admin` | `canonical_product:*` |
-| Прайс (`offer`, `import_run`) | `distributor_manager` | `offer:manage`, `import:run` |
+| Прайс (`offer`, `import_run`) | `distributor_manager` | `offer:manage`, `import:run`, `import:approve` |
 | Лоты (`lot`) | `platform_admin` | `lot:create`, `lot:manage` |
 | Матчинг (`lot_match`) | platform + distributor | `lot_match:review` |
 | Корзина (`cart`, `cart_item`) | `buyer` | `cart:manage` |
