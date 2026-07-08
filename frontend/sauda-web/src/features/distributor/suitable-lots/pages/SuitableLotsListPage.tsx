@@ -1,19 +1,25 @@
 import { CompanyBanner } from "../../../../components/distributor/CompanyBanner";
 import { StatsCards } from "../../../../components/distributor/StatsCards";
 import { useAuth } from "../../../../auth/AuthProvider";
+import { useOfferStats } from "../../offers/hooks/useOfferStats";
 import { SuitableLotCard } from "../components/SuitableLotCard";
 import { useSuitableLots } from "../hooks/useSuitableLots";
 
 export function SuitableLotsListPage() {
   const { organization } = useAuth();
   const { items, total, loading, error } = useSuitableLots();
+  const offerStats = useOfferStats();
 
   if (!organization) return null;
 
   return (
     <div className="space-y-6">
       <CompanyBanner organization={organization} />
-      <StatsCards totalMatches={total} uploadedProductsCount={2} inStockCount={2} />
+      <StatsCards
+        totalMatches={total}
+        uploadedProductsCount={offerStats.total}
+        inStockCount={offerStats.inStock}
+      />
 
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Подходящие лоты</h1>

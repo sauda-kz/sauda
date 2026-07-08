@@ -51,7 +51,7 @@ export function CompanyBanner({ organization, lastPriceListUpdatedAt = null }: C
           </div>
         </div>
 
-        <Link to="#" className="shrink-0">
+        <Link to="/imports" className="shrink-0">
           <Button className="w-full sm:w-auto">
             <Upload className="h-4 w-4" />
             Загрузить / обновить прайс

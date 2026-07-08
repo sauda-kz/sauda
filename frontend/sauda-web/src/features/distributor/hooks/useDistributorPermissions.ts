@@ -10,6 +10,7 @@ export function useDistributorPermissions() {
   const canReadImports = isManager || isViewer;
   const canRunImport = isManager;
   const canApproveImport = isManager;
+  const canReadOffers = isManager || isViewer;
 
   return {
     isManager,
@@ -19,5 +20,6 @@ export function useDistributorPermissions() {
     canReadImports,
     canRunImport,
     canApproveImport,
+    canReadOffers,
   };
 }

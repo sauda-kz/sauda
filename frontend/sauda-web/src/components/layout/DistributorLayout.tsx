@@ -18,7 +18,7 @@ function SaudaLogo() {
 
 export function DistributorLayout() {
   const { organization, logout } = useAuth();
-  const { canReadImports } = useDistributorPermissions();
+  const { canReadImports, canReadOffers } = useDistributorPermissions();
   const location = useLocation();
   const orgName = organization?.name ?? "Компания";
 
@@ -42,6 +42,7 @@ export function DistributorLayout() {
             <SaudaLogo />
             <nav className="hidden items-center gap-6 sm:flex">
               {navLink("/suitable-lots", "Подходящие лоты")}
+              {canReadOffers && navLink("/offers", "Мой прайс")}
               {canReadImports && navLink("/imports", "Импорты")}
               {navLink("/notifications", "Уведомления")}
             </nav>
